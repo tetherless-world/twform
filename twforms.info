@@ -1,0 +1,12 @@
+; $Id$
+name = TW Forms
+description = Provides mechanisms for creating and editing RDF objects in a remote triple store
+dependencies[] = twsparql
+dependencies[] = twdocs
+core = 6.x
+
+package = "RDF"
+
+version = "6.x-1.1-dev"
+
+

@@ -1,0 +1,417 @@
+<?php
+// $Id$
+/**
+* @file
+* TW Forms Module.
+*/
+
+define("EOL","\r\n");
+/** Set this to TRUE to enable editing (experimental) */
+define("ENABLE_EDITING",FALSE);
+
+/*
+global $twforms_class;
+$twforms_class = null;
+ */
+
+require_once(__DIR__."/../twsparql/DrupalTWSparql.inc");
+require_once("DrupalTWForm.php");
+
+/******************************************************************************
+* Hook Functions (Drupal)
+******************************************************************************/
+
+/**
+ * Display help and module information
+ * @param path which path of the site we're displaying help
+ * @param arg array that holds the current path as would be returned from arg()
+ * function
+ * @return help text for the path
+ */
+function twforms_help($path, $arg) {
+
+  switch ($path) {
+  case "admin/help/twforms":
+    $output = '<p>'.  t("The TW Forms module allows users to create custom ".
+        "forms tied to a remote tripe store and custom ontologies.") .'</p>';
+    break;
+  default:
+    $output = "";
+  }
+  return $output;
+}
+
+/**
+* Valid permissions for this module
+* @return array An array of valid permissions for the provenance module
+*/
+function twforms_perm() {
+  return array('administer tw forms', 'edit rdf instances');
+}
+
+/**
+* Menu for this module
+* @return array An array with this module's settings.
+*/
+function twforms_menu() {
+  $items = array();
+
+  if ( ENABLE_EDITING ) {
+    $items['node/%node/rdfedit'] = array(
+      'title' => 'Edit Instance',
+      'page callback' => 'twforms_edit_instance',
+      'page arguments' => array(1, NULL),
+      'access callback' => 'twforms_edit_access',
+      'access arguments' => array(1),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1
+    );
+
+    $items['node/%node/rdfedit/%'] = array(
+      'title' => 'Edit Instance',
+      'page callback' => 'twforms_edit_instance',
+      'page arguments' => array(1, 3),
+      'access callback' => 'twforms_edit_access',
+      'access arguments' => array(1),
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+
+  $items['admin/settings/twforms'] = array(
+    'title' => 'TW Forms Settings',
+    'description' => 'Settings for the TW Forms module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twforms_admin_settings'),
+    'access arguments' => array('administer tw forms'),
+    'type' => MENU_NORMAL_ITEM
+    );
+
+  return $items;
+}
+
+/** Drupal hook function for creating, editing and deleting pages
+ *
+ * This function is called whenever a page is created, edited or deleted. It determines if
+ * there is a twform in this page and generates the html form to be used to create and edit
+ * instances
+ *
+ * @param $node object representing the page
+ * @param $op string representing the type of operation being performed
+ * @param $a3 object we do not use this parameter
+ * @param $a4 object we do not use this parameter
+ */
+function twforms_nodeapi(&$node,$op,$a3=NULL,$a4=NULL){
+  switch($op) {
+  case 'update':
+    /* If updating the page, clicked edit then save, then we determine the type of entity
+     * that we are creating from the twformheader and we save that type along with this
+     * form page (the node id nid) so that we can use this page to edit that type of thing
+     */
+    $content = $node->body;
+    $matches = NULL;
+    if(0<preg_match_all("/<twformheader(([^\/>]*(\/[^>])?)*)(\/>|>(([^<]*(<[^\/])?)*)<\/twformheader>)/",$content,$matches,PREG_OFFSET_CAPTURE)) {
+      $params = TWForm::extractAttrs($matches[1][0][0]);
+      foreach($params as $param=>$value) {
+      	if(0===strpos($param,"xmlns:")) {
+          $ns = substr($param, 6);
+          TWForm::registerNS($ns, $value);
+        }
+      }
+      $class = TWForm::expandCURIE($params["class"]);
+      db_query("DELETE FROM {twforms_forms} WHERE nid = %d",$node->nid);
+      db_query("INSERT INTO {twforms_forms} VALUES (\"%s\",%d)",$class,$node->nid);
+    }
+    break;
+  case 'delete':
+    /* If the page is deleted then we want to remove the information from the twforms_forms table
+     * related to what type of entity we are creating with this form
+     *
+     * Remember that this functions is called for all pages. So we have to determine if this page
+     * has a twform in it, then we delete the rows in the table that match this node id.
+     */
+    $content = $node->body;
+    if(0<preg_match_all("/<twformheader(([^\/>]*(\/[^>])?)*)(\/>|>(([^<]*(<[^\/])?)*)<\/twformheader>)/",$content,$matches,PREG_OFFSET_CAPTURE)) {
+      $params = twforms_parse_params($matches);
+      db_query("DELETE FROM {twforms_forms} WHERE nid = %d",$node->nid);
+    }
+    break;
+  case 'presave':
+  case 'insert':
+    break;
+  case 'view':
+    /* If viewing the page then we determine if there is a twform in the page and, if so,
+     * render the elements into an html form
+     */
+    $node->content["body"]["#value"] = twforms_process($node->content["body"]["#value"], $node);
+    break;
+  case 'save':
+    break;
+  }
+}
+
+/** Function that processes the content of the page to render it as an html form
+ *
+ * We know at this point that there is a twform in the page. So we parse the form
+ * and generate the html form
+ *
+ * @param $content string the content of the page
+ * @param $node object representing the page we are on
+ * @return string the new content of the page with the html form
+ */
+function twforms_process($content, &$node) {
+  drupal_add_css(drupal_get_path('module','twforms').'/twforms.css');
+  drupal_add_js(drupal_get_path('module','twforms').'/form-common.js');
+
+  /* Loop through $content and look for prologues/epilogues for TW Forms
+   *
+   * We look for the start of the form, which is a twformheader element, and the ending of the
+   * form, which is a twformsubmit element. There can be multiple forms per page. We replace
+   * only the content between the twformheader and the ending twformsubmit with the rendered
+   * html form. We leave everything else alone.
+   *
+   * FIXME: this means that we can't have any content in the form other then form elements
+   */
+  $matches = NULL;
+  $newContent = "";
+  while(0 < preg_match("/<twformheader[^>]*>.*?<twformsubmit[^>]*>/s", $content, $matches, PREG_OFFSET_CAPTURE)) {
+    $newContent .= substr($content, 0, $matches[0][1]);
+    $content = substr($content, $matches[0][1]+strlen($matches[0][0]));
+    /* First parse the form elements and create the form object with the various components */
+    $form = DrupalTWForm::parseForm($matches[0][0], $node);
+    /* Render the twform into an html form */
+    $newContent .= $form->render();
+  }
+  /* FIXME: Not sure what's going on here but has to do with editing */
+  if ( isset($_POST["twform_id"]) ) {
+    $form_node = node_load($_POST["twforms_id"]);
+    TWForm::$editing = TRUE;
+    $form = DrupalTWForm::parseForm($form_node->body, $node, $form_node);
+    if ( $form->checkPOST() ) {
+      $form->save();
+    }
+  }
+  $newContent .= $content;
+
+  /* Check for leftover components caused by invalid input */
+  if(0 < preg_match("/<twformheader[^>]*>/", $newContent)) {
+    drupal_set_message("Unexpected &lt;twformheader&gt;", 'warning');
+  }
+  if(0 < preg_match("/<twformbody[^>]*>.*?<\\/twformbody>/", $newContent)) {
+    drupal_set_message("Unexpected &lt;twformbody&gt; outside valid form",
+      'warning');
+  }
+  if(0 < preg_match("/<twformcompound[^>]*>.*?<\\/twformcompound>/",
+      $newContent)) {
+    drupal_set_message("Unexpected &lt;twformcompound&gt; outside valid form",
+      'warning');
+  }
+  if(0 < preg_match("/<twformfield[^>]*>(.*?<\\/twformfield>)?/", $newContent)) {
+    drupal_set_message("Unexpected &lt;twformfield&gt; outside valid form",
+      'warning');
+  }
+  if(0 < preg_match("/<twformsubmit[^>]*>/", $newContent)) {
+    drupal_set_message("Unexpected &lt;twformsubmit&gt; without matching &lt;twformheader&gt;", 'warning');
+  }
+
+  return $newContent;
+}
+
+/**
+ * Performs a SQL/SPARQL join to determine the forms available for editing the instance in the specified node, if any.
+ * @param node $node A Drupal node object.
+ * @return array A map of <nid, string> pairs, where each string is a human-readable string, that can edit $node
+ */
+function twforms_get_forms($node) {
+  $content = $node->body;
+  $matches = array();
+  $forms = array();
+  if(preg_match('/<sparql[^>]*\s(i|s|uri)=["\']([\S]*)["\']\s[^>]*>/',$content,$matches)) {
+    $instURI = $matches[2];
+    if($matches[1] == "i") {
+      $instURI = TWSparql::rfc2396(TWSparql::getEngine()->getIbase(),$instURI);
+    }
+    else if($matches[1] == "s") {
+      $instURI = TWSparql::rfc2396(TWSparql::getEngine()->getSbase(),$instURI);
+    }
+    $query = "SELECT ?type WHERE { <$instURI> a ?type }";
+    $endpoint = TWSparql::getEngine()->getEndpoint();
+    $endpoint .= "?query=".urlencode($query);
+    $ctx = stream_context_create(array('http' => array("method" => "POST",
+						       "header" => "Accept: application/sparql-results+json")));
+    $result = @file_get_contents($endpoint,false,$ctx);
+    $result = json_decode($result);
+    $types = $result->results->bindings;
+    if(is_array($types)) {
+      foreach($types as $type) {
+        $uri = $type->type->value;
+        $rs=db_query("SELECT {twforms_forms}.nid, {node}.title FROM {twforms_forms} LEFT JOIN {node} ON {twforms_forms}.nid = {node}.nid WHERE type_uri = '%s'",$uri);
+        while($row = $rs->fetch_assoc()) {
+          $forms[$row["nid"]] = $row["title"];
+        }
+        $rs->free();
+      }
+    }
+  }
+  return $forms;
+}
+
+/**
+ * Checks whether the specified node is an RDF instance or not.
+ *
+ * @return bool TRUE if there is at least one form that can edit an RDF instance on the page, FALSE otherwise.
+ */
+function twforms_node_is_instance($node) {
+  $forms = twforms_get_forms($node);
+  return count($forms)>0;
+}
+
+/**
+ * Determines whether a page for an RDF instance can be edited or not.
+ *
+ * @return bool TRUE if an instance on this page can be edited by the user, FALSE otherwise.
+ */
+function twforms_edit_access($node) {
+  if ( !ENABLE_EDITING ) {
+    return FALSE;
+  }
+  $access = (user_access('edit rdf instances'));
+  $access = $access && node_access('update', $node);
+  $access = $access && twforms_node_is_instance($node);
+
+  return $access;
+}
+
+function twforms_edit_instance($node, $formid) {
+  if ( !ENABLE_EDITING ) {
+    drupal_access_denied();
+    return;
+  }
+  if(isset($formid) && $formid != NULL) {
+    return twforms_edit_form($node, node_load($formid));
+  }
+
+  $forms = twforms_get_forms($node);
+
+  switch(count($forms)) {
+  case 0:
+    break;
+  case 1:
+    $nids = array_keys($forms);
+    return twforms_edit_form($node, node_load($nids[0]));
+  default:
+    $res = t("This instance can be edited using multiple forms, please pick one:")."<br /><ul>";
+    foreach($forms as $nid => $title) {
+      $res .= "<li><a href='./rdfedit/$nid'>$title</a></li>";
+    }
+    $res .= "</ul>";
+    return $res;
+  }
+  return "";
+}
+
+function twforms_edit_form($node, $form_node) {
+  drupal_add_css(drupal_get_path('module','twforms').'/twforms.css');
+  drupal_add_js(drupal_get_path('module','twforms').'/form-common.js');
+  $str = "<p>Editing ".$node->title." with form ".$form_node->title."</p>";
+  TWForm::$editing = TRUE;
+  $form = DrupalTWForm::parseForm($form_node->body, $node, $form_node);
+  $res = "";
+  try {
+    $res = twdocs_process($str.$form->render(),$node);
+  }
+  catch(Exception $e) {
+    $res = $str.$form->render();
+  }
+  $res = '<div class="node"><div class="content">'.$res.'</div><div class="twblank">&nbsp;</div></div>';
+  return $res;
+}
+
+
+/**
+* TW Forms Configure
+* @return array An array of form data.
+*/
+function twforms_admin_settings() {
+  $form = array();
+
+  $form['settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Settings'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE);
+
+  $form['settings']['twforms_updateuri'] = array(
+    '#type' => 'textfield',
+    '#title' => t('URI to perform SPARQL/Update'),
+    '#default_value' => twforms_get_updateuri(),
+    '#maxlength' => 2048,
+    '#required' => TRUE,
+    '#description' => t('When a form is submitted, the module will send a SPARQL/Update request to this URL to add the new instance to the triple store. You can specify multiple URLs separated by spaces.')
+    );
+
+  $form['settings']['twforms_rdfsuri'] = array(
+    '#type' => 'textfield',
+    '#title' => t('URI of RDFS update (if any)'),
+    '#default_value' => twforms_get_rdfsuri(),
+    '#maxlength' => 2048,
+    '#description' => t('When a form is submitted, the module will send a SPARQL/Update request to this URL to force a refresh of the RDFS memory model. You can specify multiple URLs separated by spaces.')
+  );
+
+  $form['settings']['twforms_backup'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Backup Directory'),
+    '#default_value' => twforms_get_backup(),
+    '#maxlength' => 255,
+    '#required' => FALSE,
+    '#description' => t('If set, this directory on disk will be used for storing an RDF/XML representation of the instance for archival purposes. The web server must have write permissions to this directory.')
+    );
+
+  $form['devel'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Development'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE);
+
+  $form['devel']['twforms_simulate'] = array(
+    '#type' => 'radios',
+    '#title' => t('Simulate Commands'),
+    '#default_value' => twforms_get_simulate(),
+    '#options' => array(FALSE=>t('Disabled'),TRUE=>t('Enabled')),
+    '#description' => t('Prevents actual updates from occurring and prints SPARUL and Drupal commands instead')
+  );
+
+  $form['devel']['twforms_alt_base'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Alternate Alias Base URL',
+    '#default_value' => twforms_get_alt_base(),
+    '#maxlength' => 255,
+    '#required' => FALSE,
+    '#description' => t('Will force alias fields to use the specified base, rather than Drupal\'s base_url()')
+  );
+
+  return array_merge_recursive(system_settings_form($form), array('#theme' => 'twforms_admin_settings', 'buttons' => array('#weight' => 99)));
+}
+
+function twforms_admin_settings_validate($form, &$form_state) {
+}
+
+function twforms_get_updateuri() {
+  return variable_get('twforms_updateuri',"http://example.com/update/service");
+}
+
+function twforms_get_rdfsuri() {
+  return variable_get('twforms_rdfsuri',"http://example.com/update/rdfs");
+}
+
+function twforms_get_backup() {
+  return variable_get('twforms_backup',"");
+}
+
+function twforms_get_simulate() {
+  return variable_get('twforms_simulate',FALSE);
+}
+
+function twforms_get_alt_base() {
+  return variable_get('twforms_alt_base',"");
+}

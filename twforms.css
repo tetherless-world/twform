@@ -1,0 +1,233 @@
+form[name='twform'], form[name='twform'] * {
+    font-size: 9pt;
+}
+
+form[name='twform'] select {
+    margin: 0.25em 0;
+}
+
+form[name='twform'] select option {
+  font-size: 9pt;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+form[name='twform'] {
+    margin: 2em 0;
+    position: relative;
+    background-color: white;
+    width: 100%;
+}
+
+
+form[name='twform'] ul.compoundfield li {
+    background-image: none;
+    margin-left: 0;
+    padding-left: 0;
+}
+
+form[name='twform'] ul.compoundfield span.link {
+    cursor: pointer;
+    color: #2F416F;
+    text-decoration: underline;
+}
+
+form[name='twform'] ul.compoundfield span.link:hover {
+    color: #7F9DCC;
+    text-decoration: none;
+}
+
+form[name='twform'] div.field {
+    position: relative;
+    width: 100%;
+    margin: 0.25em 0;
+    box-sizing: border-box;
+    border: 1px solid white;
+}
+
+form[name='twform'] div.field:hover {
+    background-color: #ffe;
+}
+
+form[name='twform'] div.field div.wrapper {
+    position: relative;
+    left: 27%;
+    max-width: 73%;
+}
+
+form[name='twform'] div.field span.label {
+    position: absolute;
+    right: 25%;
+    left: 0%;
+    width: 25%;
+    text-align: right;
+}
+
+form[name='twform'] div.field.required span.label {
+    font-weight: bold;
+    vertical-align: super;
+}
+
+form[name='twform'] div.field.required span.label span {
+    color: red;
+}
+
+form[name='twform'] div.field ul li {
+    margin: 0.5em 0;
+}
+
+#maincontent form[name='twform'] div.field ul.compoundfield {
+    list-style-type: none;
+    padding: 0;
+}
+
+form[name='twform'] span.info {
+    font-style: italic;
+    position: relative;
+    padding: 0;
+    margin: 0;
+    padding-left: 27%;
+    font-size: 9pt;
+}
+
+/*
+form[name='twform'] div.field ul.multiple li {
+    border-color: #ffe;
+}
+*/
+
+span.info {
+    margin-bottom: -0.5em;
+    top: -0.5em;
+}
+
+.node .content form[name='twform'] p {
+    padding: 0;
+}
+
+.node .content form[name='twform'] div+br {
+    display: none;
+}
+
+/*
+.node .content form[name='twform'] fieldset>br {
+    display: none;
+}
+*/
+
+.node .content form[name='twform'] {
+    position: relative;
+    width: 100%;
+    margin-top: 0;
+    float:left;
+}
+
+form[name='twform']>div.wrapper {
+    min-height: 320px;
+}
+
+/*
+.node .content form[name='twform'] fieldset {
+    width: 100%;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    float:left;
+}
+
+form[name='twform'] fieldset>* {
+    float:left;
+}
+
+form[name='twform'] fieldset legend {
+    display: block;
+    cursor: pointer;
+    float:left;
+    clear:left;
+    width: 19%;
+    position: relative;
+    height:2em;
+    border: 1px solid black;
+    border-radius: 15px;
+    line-height: 2em;
+    padding-left: 1%;
+    border-top-right-radius:0;
+    -moz-border-top-right-radius:0;
+    -webkit-border-top-right-radius:0;
+    border-bottom-right-radius:0;
+    -moz-border-bottom-right-radius:0;
+    -webkit-border-bottom-right-radius:0;
+    display:block;
+    left: -1px;
+    z-index: 1;
+    background-color: white;
+    border-right: 1px solid white;
+}
+
+form[name='twform'] fieldset.active legend {
+    border-right: 1px solid white;
+}
+
+form[name='twform'] fieldset>div {
+    float:right;
+    right: 0px;
+    width: 80%;
+    position: absolute;
+    border: 1px solid black;
+    top: 0;
+    z-index: 0;
+    display: block;
+    min-height: 320px;
+}
+
+form[name='twform'] fieldset.inactive>div {
+    display: none;
+    overflow: hidden;
+}
+
+form[name='twform'] fieldset.inactive>legend {
+    border-right: 1px solid black;
+    background: #ddd;
+    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzAwMDAwMCIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjQ2JSIgc3RvcC1jb2xvcj0iIzI5MjkyOSIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM1OTU5NTkiIHN0b3Atb3BhY2l0eT0iMC4zOCIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
+    background: -moz-linear-gradient(left,  rgba(0,0,0,0) 0%, rgba(41,41,41,0) 46%, rgba(89,89,89,0.38) 100%);
+    background: -webkit-gradient(linear, left top, right top, color-stop(0%,rgba(0,0,0,0)), color-stop(46%,rgba(41,41,41,0)), color-stop(100%,rgba(89,89,89,0.38)));
+    background: -webkit-linear-gradient(left,  rgba(0,0,0,0) 0%,rgba(41,41,41,0) 46%,rgba(89,89,89,0.38) 100%);
+    background: -o-linear-gradient(left,  rgba(0,0,0,0) 0%,rgba(41,41,41,0) 46%,rgba(89,89,89,0.38) 100%);
+    background: -ms-linear-gradient(left,  rgba(0,0,0,0) 0%,rgba(41,41,41,0) 46%,rgba(89,89,89,0.38) 100%);
+    background: linear-gradient(left,  rgba(0,0,0,0) 0%,rgba(41,41,41,0) 46%,rgba(89,89,89,0.38) 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#61595959',GradientType=1 );
+}
+*/
+
+form[name='twform'] {
+    float:left;
+    height:auto;
+}
+
+form[name='twform'] input {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+form[name='twform'] input[type='submit'] {
+    float:left;
+    clear:both;
+    padding-top:6pt;
+}
+
+form[name='twform'] div.field.warning {
+    background-color: cornsilk;
+    border: 1px solid khaki;
+}
+
+form[name='twform'] div.field.error {
+    background-color: mistyrose;
+    border: 1px solid red;
+    color: black;
+}
+
+form[name='twform'] div.field span.message {
+    padding-left: 1em;
+}
+
+form[name='twform'] div.field br+span.message {
+    padding-left: 0;
+}

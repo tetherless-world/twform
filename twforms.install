@@ -1,0 +1,49 @@
+<?php
+// $Id$
+
+
+/**
+ * Implementation of hook_install()
+ */
+function twforms_install() {
+  // Set weight relative to other TW* modules
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'twforms'");
+
+  // Install the DB schema
+  drupal_install_schema('twforms');
+}
+
+function twforms_update_6001(&$sandbox) {
+  drupal_install_schema('twforms');
+}
+
+/**
+ * Implementation of hook_uninstall()
+ */
+function twforms_uninstall() {
+  drupal_uninstall_schema('twforms');
+}
+
+function twforms_schema() {
+  $schema = array();
+
+  // The TWForms_forms table maps type URIs to forms that generate them.
+  $schema['twforms_forms'] = array(
+    'description' => 'Maps instance types to forms',
+    'fields' => array(
+       'type_uri' => array(
+	  'description' => 'A URI naming an RDFS Class',
+	  'type' => 'text',
+	  'not null' => TRUE,
+	  'size' => 'normal'),
+       'nid' => array(
+          'description' => 'A {node} containing a twforms structure used to edit instances of the target class',
+	  'type' => 'int',
+	  'unsigned' => TRUE,
+	  'not null' => TRUE,
+	  'default' => 0)
+       )
+    );
+
+  return $schema;
+}
