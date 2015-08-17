@@ -255,6 +255,26 @@ TWForms = {
     var valid = true;
     var label = TWForms.labelForField( field );
     TWForms.resetValidation(field);
+
+    // if the compound is not required and no subfields are set then the
+    // compound is valid
+    if ( !field.hasClass("required") ) {
+      var isset = false ;
+      $("ul.compoundfield li.subfield", field).each(function(i) {
+        $("select option:selected", field).each(function() {
+          if ( $(this).text() != "None" ) {
+            isset = true ;
+          }
+        });
+        $("textarea, input", this).each(function() {
+          if ( $(this).val() != "" ) {
+            isset = true ;
+          }
+        });
+      });
+      if( isset == false ) return true ;
+    }
+
     // handle compound field
     // if a compound has a least one component that is required, then
     // only those components must be set
