@@ -382,26 +382,28 @@ TWForms = {
   },
   validateFileUpload: function(field) {
     var valid = true;
-    var label = TWForms.labelForField( field );
-    TWForms.resetValidation(field);
-    // handle file upload field
-    if ( $("input[value='external']", field)[0].checked ) {
-      // external URL
-      if ( $("input[type='text']", field).val() == "" ) {
-        valid = false;
-        TWForms.showValidationMessage(
-          $(field), "error", TWForms.getMessage( "noURI", label )
-        );
-      }
-    } else {
-      // internal URL
-      var value = $("input[type='hidden' && name$='_internal']", field).val();
-      if ( value == undefined || value == "" ) {
-        valid = false;
-        TWForms.showValidationMessage(
-          field, "error", TWForms.getMessage( "noFile", label )
-        );
-      }
+    if ( field.hasClass("required") ) {
+        var label = TWForms.labelForField( field );
+        TWForms.resetValidation(field);
+        // handle file upload field
+        if ( $("input[value='external']", field)[0].checked ) {
+          // external URL
+          if ( $("input[type='text']", field).val() == "" ) {
+            valid = false;
+            TWForms.showValidationMessage(
+              $(field), "error", TWForms.getMessage( "noURI", label )
+            );
+          }
+        } else {
+          // internal URL
+          var value = $("input[type='hidden' && name$='_internal']", field).val();
+          if ( value == undefined || value == "" ) {
+            valid = false;
+            TWForms.showValidationMessage(
+              field, "error", TWForms.getMessage( "noFile", label )
+            );
+          }
+        }
     }
     return valid;
   },
