@@ -390,12 +390,14 @@ TWForms = {
     var label = TWForms.labelForField( field );
     TWForms.resetValidation(field);
     // handle dropdown or multiple select field
-    if ( $("select", field).val() == "" ) {
+    if ( field.hasClass("required") &&
+         $("select", field).val() == "" ) {
       valid = false;
       TWForms.showValidationMessage(
         field, "error", TWForms.getMessage( "required", label )
       );
-    } else if ( $("select option:selected", field).text() == "None" ) {
+    } else if ( $("select option:selected", field).text() == "None" &&
+                $("select", field).val() != "" ) {
       // Use case: subtype selection where the default value (None) is
       // really the root of the type hierarchy (e.g. foaf:Document)
       TWForms.showValidationMessage(
