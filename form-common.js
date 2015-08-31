@@ -315,8 +315,6 @@ TWForms = {
           }
           if ( satisfied ) {
             isset = true;
-          } else if ( isset ) {
-            window.alert( "<component name>" + " component of " + "<field name>" + " entry " + "<index>" + " has " + "<first required component name>" + " but not " + "<this component name>" );
           }
         }
         first = false;
