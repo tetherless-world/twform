@@ -154,7 +154,7 @@ class CompoundComponent extends Component {
         $comp->setPrefix($this->id."_");
         $this->components[] = $comp;
         $this->structure .= $comp->render_structure();
-        
+
         $content = substr($content,strlen($matches[0][0]));
       }
       else if(0<preg_match("/^<.*?>/s",$content,$matches,
@@ -171,7 +171,7 @@ class CompoundComponent extends Component {
       }
     }
     $this->items = array($this->components);
-    
+
     $this->structure .= '<input type="hidden" name="'.$this->id.'_many" value="'.($this->more ? "true" : "false").'"/>';
     $this->structure .= '<input type="hidden" name="'.$this->id.'_order" value="'.($this->order ? $this->order : "false").'"/>';
     $this->structure .= '<input type="hidden" name="'.$this->id.'_class" value="'.$this->typeof.'"/>';
