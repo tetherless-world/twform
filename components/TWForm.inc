@@ -534,7 +534,10 @@ abstract class TWForm {
     $res .= '  var elems = $("div.field",document.twform);'.EOL;
     $counter = 0;
     foreach($this->body as $node) {
-      if($node->getType() != "textNode" && $node->getType() != "compound") {
+      // Since a compound element also has a field class associated with it then we need
+      // to add the function for it too
+      //if($node->getType() != "textNode" && $node->getType() != "compound") {
+      if($node->getType() != "textNode" ) {
         // Initialize form components here
         $res .= "  var elem=elems[$counter];".EOL;
         $res .= "  (function() {".EOL;
