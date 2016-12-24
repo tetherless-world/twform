@@ -659,8 +659,8 @@ abstract class TWForm {
             $output .= '<'.$o['value']."> .\n";
           else if ($o['type'] == 'literal') { //print literal object
             $val = $o['value'];
-            $val = preg_replace('/\r/','\\r',$val);
-            $val = preg_replace('/\n/','\\n',$val);
+            $val = preg_replace('/\r/','',$val);
+            $val = preg_replace('/\n/','',$val);
             $output .= '"'.preg_replace("/\"/","\\\"",$val).'"';
             if (array_key_exists('datatype',$o)) $output .= '^^<'.$o['datatype'].'>';
             if (array_key_exists('lang',$o)) $output .= '@'.$o['lang'];
