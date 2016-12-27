@@ -129,6 +129,10 @@ abstract class TWForm {
             "rdfs"=>"http://www.w3.org/2000/01/rdf-schema#",
             "time"=>"http://www.w3.org/2006/time#",
             "owl"=>"http://www.w3.org/2002/07/owl#",
+            "foaf"=>"http://xmlns.com/foaf/0.1/",
+            "tw"=>"http://tw.rpi.edu/schema/",
+            "dc"=>"http://purl.org/dc/terms/",
+            "skos"=>"http://www.w3.org/2008/05/skos#",
             "xsd"=>"http://www.w3.org/2001/XMLSchema#");
   public $class = NULL;
   public $contentType = NULL;

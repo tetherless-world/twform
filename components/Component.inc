@@ -93,6 +93,7 @@ abstract class Component {
       "OPTIONAL { ?uri foaf:name ?name . FILTER(lang(?name)=\"\" || lang(?name)=\"en\") }\r\n".
       "OPTIONAL { ?uri dc:title ?title }\r\n".
       "OPTIONAL { ?uri rdfs:label ?label }\r\n".
+      "OPTIONAL { ?uri skos:prefLabel ?label }\r\n".
       "OPTIONAL { ?uri foaf:firstName ?fname . FILTER(lang(?fname)=\"\" || lang(?fname)=\"en\") }\r\n".
       "OPTIONAL { ?uri foaf:givenname ?fname . FILTER(lang(?fname)=\"\" || lang(?fname)=\"en\") }\r\n".
       "OPTIONAL { ?uri foaf:givenName ?fname . FILTER(lang(?fname)=\"\" || lang(?fname)=\"en\") }\r\n".
