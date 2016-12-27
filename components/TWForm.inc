@@ -405,65 +405,77 @@ abstract class TWForm {
     case "compound":
       $obj = new CompoundComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "text":
       $obj = new TextComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "url":
       $obj = new UrlComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "email":
       $obj = new EmailComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "file":
       $obj = new FileComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "alias":
       $obj = new AliasComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "instance":
       $obj = new InstanceComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "subclass":
       $obj = new SubclassComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "date":
       $obj = new DateComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "daterange":
       $obj = new DateRangeComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     case "textarea":
       $obj = new TextareaComponent();
       $obj->setForm($this);
+      $obj->setLogger( $this->getLogger() ) ;
       $obj->processParams($params);
       break;
     }
 
+    /*
     if( isset( $obj ) )
     {
-        $obj->setLogger( $this->getLogger() ) ;
         $obj->dump( "" ) ;
     }
+    */
 
     return $obj;
   }
@@ -522,7 +534,10 @@ abstract class TWForm {
     $res .= '  var elems = $("div.field",document.twform);'.EOL;
     $counter = 0;
     foreach($this->body as $node) {
-      if($node->getType() != "textNode" && $node->getType() != "compound") {
+      // Since a compound element also has a field class associated with it then we need
+      // to add the function for it too
+      //if($node->getType() != "textNode" && $node->getType() != "compound") {
+      if($node->getType() != "textNode" ) {
         // Initialize form components here
         $res .= "  var elem=elems[$counter];".EOL;
         $res .= "  (function() {".EOL;
@@ -644,8 +659,8 @@ abstract class TWForm {
             $output .= '<'.$o['value']."> .\n";
           else if ($o['type'] == 'literal') { //print literal object
             $val = $o['value'];
-            $val = preg_replace('/\r/','\\r',$val);
-            $val = preg_replace('/\n/','\\n',$val);
+            $val = preg_replace('/\r/','',$val);
+            $val = preg_replace('/\n/','',$val);
             $output .= '"'.preg_replace("/\"/","\\\"",$val).'"';
             if (array_key_exists('datatype',$o)) $output .= '^^<'.$o['datatype'].'>';
             if (array_key_exists('lang',$o)) $output .= '@'.$o['lang'];
@@ -1105,8 +1120,13 @@ abstract class TWForm {
 
   protected function processPOST() {
     drupal_set_message("TWForm::processPOST", "status");
+    var_dump( $_POST ) ;
     $this->data = array();
 
+    // Determine all the fields of the form in the post and what type of
+    // field they are. The key of the array is the field name and the
+    // value is the type of field. For example, in the class instance
+    // form the field "roles" is of type "compound".
     $fields = array();
     foreach($_POST as $field => $value) {
       if(FALSE!==($pos=strrpos($field,"_type"))) {
@@ -1116,6 +1136,13 @@ abstract class TWForm {
         }
       }
     }
+    print( "<br/><br/>" ) ;
+    var_dump( $fields ) ;
+
+    // determine what the URI is of this new instance. If the URI is a
+    // file then we grab the file URI. If set by the user then there
+    // will be an alias type uri. Else we generate a URI given the type
+    // of instance we're creating and time information.
     if(isset($fields["uri"])) {
       $uri = ($fields["uri"] == "file" ? $this->valueOfFileField("uri") :
         ($fields["uri"] == "alias" ? $this->valueOfAliasField("uri") :
@@ -1134,9 +1161,22 @@ abstract class TWForm {
       return null;
     }
     $this->uri = $uri;
+
+    print( "<br/><br/>uri = $uri" ) ;
+    return false ;
+    // I AM HERE
+
+    // set the type of the new instance given the class defined in the
+    // header
     $this->setProperty($uri, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", $_POST["class"], "uri");
+
+    // iterate through each of the fields now and process them given
+    // their type.
     foreach($fields as $field => $type) {
+      // skip the uri field. We've already dealth with that one
       if($field=="uri") continue;
+      // FIXME: we already know the type. It's in the fields array. We
+      // are we getting it again?
       $type = $_POST[$field."_type"];
       drupal_set_message("Processing $field of type $type", "status");
       switch($type) {

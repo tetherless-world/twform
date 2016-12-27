@@ -255,6 +255,26 @@ TWForms = {
     var valid = true;
     var label = TWForms.labelForField( field );
     TWForms.resetValidation(field);
+
+    // if the compound is not required and no subfields are set then the
+    // compound is valid
+    if ( !field.hasClass("required") ) {
+      var isset = false ;
+      $("ul.compoundfield li.subfield", field).each(function(i) {
+        $("select option:selected", field).each(function() {
+          if ( $(this).text() != "None" ) {
+            isset = true ;
+          }
+        });
+        $("textarea, input", this).each(function() {
+          if ( $(this).val() != "" ) {
+            isset = true ;
+          }
+        });
+      });
+      if( isset == false ) return true ;
+    }
+
     // handle compound field
     // if a compound has a least one component that is required, then
     // only those components must be set
@@ -295,8 +315,6 @@ TWForms = {
           }
           if ( satisfied ) {
             isset = true;
-          } else if ( isset ) {
-            window.alert( "<component name>" + " component of " + "<field name>" + " entry " + "<index>" + " has " + "<first required component name>" + " but not " + "<this component name>" );
           }
         }
         first = false;
@@ -362,26 +380,28 @@ TWForms = {
   },
   validateFileUpload: function(field) {
     var valid = true;
-    var label = TWForms.labelForField( field );
-    TWForms.resetValidation(field);
-    // handle file upload field
-    if ( $("input[value='external']", field)[0].checked ) {
-      // external URL
-      if ( $("input[type='text']", field).val() == "" ) {
-        valid = false;
-        TWForms.showValidationMessage(
-          $(field), "error", TWForms.getMessage( "noURI", label )
-        );
-      }
-    } else {
-      // internal URL
-      var value = $("input[type='hidden' && name$='_internal']", field).val();
-      if ( value == undefined || value == "" ) {
-        valid = false;
-        TWForms.showValidationMessage(
-          field, "error", TWForms.getMessage( "noFile", label )
-        );
-      }
+    if ( field.hasClass("required") ) {
+        var label = TWForms.labelForField( field );
+        TWForms.resetValidation(field);
+        // handle file upload field
+        if ( $("input[value='external']", field)[0].checked ) {
+          // external URL
+          if ( $("input[type='text']", field).val() == "" ) {
+            valid = false;
+            TWForms.showValidationMessage(
+              $(field), "error", TWForms.getMessage( "noURI", label )
+            );
+          }
+        } else {
+          // internal URL
+          var value = $("input[type='hidden' && name$='_internal']", field).val();
+          if ( value == undefined || value == "" ) {
+            valid = false;
+            TWForms.showValidationMessage(
+              field, "error", TWForms.getMessage( "noFile", label )
+            );
+          }
+        }
     }
     return valid;
   },
@@ -390,12 +410,14 @@ TWForms = {
     var label = TWForms.labelForField( field );
     TWForms.resetValidation(field);
     // handle dropdown or multiple select field
-    if ( $("select", field).val() == "" ) {
+    if ( field.hasClass("required") &&
+         $("select", field).val() == "" ) {
       valid = false;
       TWForms.showValidationMessage(
         field, "error", TWForms.getMessage( "required", label )
       );
-    } else if ( $("select option:selected", field).text() == "None" ) {
+    } else if ( $("select option:selected", field).text() == "None" &&
+                $("select", field).val() != "" ) {
       // Use case: subtype selection where the default value (None) is
       // really the root of the type hierarchy (e.g. foaf:Document)
       TWForms.showValidationMessage(
