@@ -8,16 +8,36 @@ require_once("components/TWForm.inc");
  */
 
 class DrupalTWFormLogger extends PHPTWFormLogger {
+  /**
+   * Return whether debugging is turned on or not
+   */
+  public function shouldDebug() {
+    return variable_get( 'twforms_debug', FALSE ) ;
+  }
+
+  /**
+   * Set whether or not we should debug
+   */
+  public function enableDebug($val) {
+    variable_set('twforms_debug',$val);
+  }
+
   public function logError($str) {
-    drupal_set_message($str, 'error');
+	if( $this->shouldDebug() ) {
+        drupal_set_message($str, 'error');
+    }
   }
 
   public function logWarning($str) {
-    drupal_set_message($str, 'warning');
+	if( $this->shouldDebug() ) {
+        drupal_set_message($str, 'warning');
+    }
   }
 
   public function logStatus($str) {
-    drupal_set_message($str, 'status');
+	if( $this->shouldDebug() ) {
+        drupal_set_message($str, 'status');
+    }
   }
 }
 

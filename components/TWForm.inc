@@ -21,6 +21,16 @@ include_once("TextNode.inc");
  */
 interface TWFormLogger {
   /**
+   * Return whether debugging is turned on or not
+   */
+  public function shouldDebug();
+
+  /**
+   * Set whether or not we should debug
+   */
+  public function enableDebug($val);
+
+  /**
    * Logs a string as an error.
    * @param string $str String to log to the error console.
    */
@@ -63,12 +73,30 @@ class TWFormLogLevel {
  * @author pattoe
  */
 class PHPTWFormLogger implements TWFormLogger {
+  public $debugFlag = false;
+
+  /**
+   * Return whether debugging is turned on or not
+   */
+  public function shouldDebug() {
+    return $this->$debugFlag;
+  }
+
+  /**
+   * Set whether or not we should debug
+   */
+  public function enableDebug($val) {
+    $this->$debugFlag = $val;
+  }
+
   /**
    * Logs an error to the console.
    * @param string $str String to log to the error console.
    */
   public function logError($str) {
-    trigger_error($str, E_USER_ERROR);
+	if( $this->shouldDebug() ) {
+        trigger_error($str, E_USER_ERROR);
+    }
   }
 
   /**
@@ -76,7 +104,9 @@ class PHPTWFormLogger implements TWFormLogger {
    * @param string $str String to log to the warning console.
    */
   public function logWarning($str) {
-    trigger_error($str, E_USER_WARNING);
+	if( $this->shouldDebug() ) {
+        trigger_error($str, E_USER_WARNING);
+    }
   }
 
   /**
@@ -84,7 +114,9 @@ class PHPTWFormLogger implements TWFormLogger {
    * @param string $str String to log to the status console.
    */
   public function logStatus($str) {
-    trigger_error($str, E_USER_NOTICE);
+	if( $this->shouldDebug() ) {
+        trigger_error($str, E_USER_NOTICE);
+    }
   }
 
   private $logLevel = TWFormLogLevel::Warn;
@@ -1124,7 +1156,6 @@ abstract class TWForm {
 
   protected function processPOST() {
     drupal_set_message("TWForm::processPOST", "status");
-    var_dump( $_POST ) ;
     $this->data = array();
 
     // Determine all the fields of the form in the post and what type of
@@ -1140,8 +1171,8 @@ abstract class TWForm {
         }
       }
     }
-    print( "<br/><br/>" ) ;
-    var_dump( $fields ) ;
+    //print( "<br/><br/>" ) ;
+    //var_dump( $fields ) ;
 
     // determine what the URI is of this new instance. If the URI is a
     // file then we grab the file URI. If set by the user then there
@@ -1166,9 +1197,7 @@ abstract class TWForm {
     }
     $this->uri = $uri;
 
-    print( "<br/><br/>uri = $uri" ) ;
-    return false ;
-    // I AM HERE
+    //print( "<br/><br/>uri = $uri" ) ;
 
     // set the type of the new instance given the class defined in the
     // header

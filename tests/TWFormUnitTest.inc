@@ -5,7 +5,7 @@
  * and open the template in the editor.
  */
 
-include_once("../../twsparql/twsparql.module");
+include_once("../../twsparql-drupal/twsparql.module");
 include_once("../components/TWForm.inc");
 
 

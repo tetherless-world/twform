@@ -14,7 +14,7 @@ global $twforms_class;
 $twforms_class = null;
  */
 
-require_once(__DIR__."/../twsparql/DrupalTWSparql.inc");
+require_once(__DIR__."/../twsparql-drupal/DrupalTWSparql.inc");
 require_once("DrupalTWForm.php");
 
 /******************************************************************************
@@ -381,6 +381,14 @@ function twforms_admin_settings() {
     '#description' => t('Prevents actual updates from occurring and prints SPARUL and Drupal commands instead')
   );
 
+  $form['devel']['twforms_debug'] = array(
+    '#type' => 'radios',
+    '#title' => t('Enable Debug Output'),
+    '#default_value' => twforms_debug_enabled(),
+    '#options' => array(FALSE=>t('Disabled'),TRUE=>t('Enabled')),
+    '#description' => t('Outputs debugging information regarding creating new instances.')
+    );
+
   $form['devel']['twforms_alt_base'] = array(
     '#type' => 'textfield',
     '#title' => 'Alternate Alias Base URL',
@@ -410,6 +418,10 @@ function twforms_get_backup() {
 
 function twforms_get_simulate() {
   return variable_get('twforms_simulate',FALSE);
+}
+
+function twforms_debug_enabled() {
+  return variable_get('twforms_debug_enabled',FALSE);
 }
 
 function twforms_get_alt_base() {

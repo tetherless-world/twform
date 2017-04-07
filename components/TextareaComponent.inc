@@ -25,6 +25,8 @@ class TextareaComponent extends SimpleComponent {
   public function toSPARUL($node) {
     if($this->rel) {
       // TODO(ewpatton) escape $node """ becomes ""\"
+      $dodo = "$node <$this->rel> \"\"\"<div xmlns=\"http://www.w3.org/1999/xhtml\">$this->value</div>\"\"\" .";
+      $this->getLogger()->logStatus( "thigy = $dodo" ) ;
       return "$node <$this->rel> \"\"\"<div xmlns=\"http://www.w3.org/1999/xhtml\">$this->value</div>\"\"\" .";
     } else if($this->rev) {
       user_error("Rev shouldn't be specified on a textarea component.",
