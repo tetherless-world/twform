@@ -264,12 +264,12 @@ abstract class Component {
       drupal_set_message("Invalid CURIE $uri.","error");
       return $uri;
     }
-    return TWForm::expandCURIE($uri);
-    if(!isset($this->namespaces[$parts[0]])) {
+    //return TWForm::expandCURIE($uri);
+    if(!isset(TWForm::$namespaces[$parts[0]])) {
       drupal_set_message("Undeclared namespace $parts[0]","error");
       return $uri;
     }
-    return $this->namespaces[$parts[0]].$parts[1];
+    return TWForm::$namespaces[$parts[0]].$parts[1];
   }
 
   public function processParams(&$params) {

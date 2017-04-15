@@ -421,7 +421,7 @@ function twforms_get_simulate() {
 }
 
 function twforms_debug_enabled() {
-  return variable_get('twforms_debug_enabled',FALSE);
+  return variable_get('twforms_debug',FALSE);
 }
 
 function twforms_get_alt_base() {

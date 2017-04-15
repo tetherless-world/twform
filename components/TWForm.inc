@@ -156,7 +156,7 @@ class PHPTWFormLogger implements TWFormLogger {
 abstract class TWForm {
   protected static $logger;
   public static $editing = FALSE;
-  protected static $namespaces =
+  public static $namespaces =
       array("rdf"=>"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
             "rdfs"=>"http://www.w3.org/2000/01/rdf-schema#",
             "time"=>"http://www.w3.org/2006/time#",
