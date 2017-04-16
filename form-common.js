@@ -325,7 +325,7 @@ TWForms = {
       var isset = false;
       requiredComponents.find("select, textarea, input").each(function(i) {
         if ( satisfied ) {
-          satisfied = satisfied && $(this).val() != "";
+          satisfied = satisfied && ($(this).val() != "" || $(this).attr("name").endsWith("_end"));
           if ( !satisfied && errorSubcomponent == null ) {
             errorSubcomponent = $(this).attr("name")
               .match(/_([A-Za-z0-9]*)(\[\])?/)[1];
