@@ -227,6 +227,7 @@ class CompoundComponent extends Component {
     if($this->more) {
       $content .= $space.'var self=this;'.EOL;
       $content .= $space.'var more = $("li.more span.link",this);'.EOL;
+      $content .= $space.'more.unbind("click");'.EOL;
       $content .= $space.'more.click(function () {'.EOL;
       $content .= $space.'  TWForms.extendCompoundForm(self);'.EOL;
       $content .= $space.'});'.EOL;

@@ -243,6 +243,24 @@ TWForms = {
     window.temp = form;
     var li = $("li",form)[0].cloneNode(true);
     $("li",form).last().before(li);
+    $(li).find("input").val("");
+    $(li).find("input").each(function () {
+      var randId = Math.random().toString(36).substr(2);
+      this.id = "dp" + randId;
+    });
+    $('input[name*="_start"]',li).each(function() {
+      console.log(this);
+      $(this).removeClass("hasDatepicker");
+      $(this).datepicker();
+      $(this).datepicker({dateFormat:"yy-mm-dd"});
+    });
+    $('input[name*="_end"]',li).each(function() {
+      console.log(this);
+      $(this).removeClass("hasDatepicker");
+      $(this).datepicker();
+      $(this).datepicker({dateFormat:"yy-mm-dd"});
+    });
+    
   },
   labelForField: function(field) {
     var label = field.find("span.label").text();
