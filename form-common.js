@@ -251,13 +251,11 @@ TWForms = {
     $('input[name*="_start"]',li).each(function() {
       console.log(this);
       $(this).removeClass("hasDatepicker");
-      $(this).datepicker();
       $(this).datepicker({dateFormat:"yy-mm-dd"});
     });
     $('input[name*="_end"]',li).each(function() {
       console.log(this);
       $(this).removeClass("hasDatepicker");
-      $(this).datepicker();
       $(this).datepicker({dateFormat:"yy-mm-dd"});
     });
     
