@@ -410,7 +410,7 @@ TWForms = {
           }
         } else {
           // internal URL
-          var value = $("input[type='hidden' && name$='_internal']", field).val();
+          var value = $("input[type='hidden'][name$='_internal']", field).val();
           if ( value == undefined || value == "" ) {
             valid = false;
             TWForms.showValidationMessage(
