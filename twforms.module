@@ -162,6 +162,8 @@ function twforms_nodeapi(&$node,$op,$a3=NULL,$a4=NULL){
 function twforms_process($content, &$node) {
   drupal_add_css(drupal_get_path('module','twforms').'/twforms.css');
   drupal_add_js(drupal_get_path('module','twforms').'/form-common.js');
+  drupal_add_js(drupal_get_path('module','twforms').'/select2.min.js');
+  drupal_add_css(drupal_get_path('module','twforms').'/select2.min.css');
 
   /* Loop through $content and look for prologues/epilogues for TW Forms
    *
