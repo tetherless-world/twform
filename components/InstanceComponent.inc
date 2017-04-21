@@ -99,7 +99,7 @@ class InstanceComponent extends SimpleComponent {
   }
 
   public function render() {
-    $res = '<select class="twforms-select-'.$this->id.'" name="'.$this->id.($this->multiple || $this->isArray ? "[]" : "").'"';
+    $res = '<select class="twforms-select-'.$this->id.'" style="width:320px;" name="'.$this->id.($this->multiple || $this->isArray ? "[]" : "").'"';
     if($this->multiple)
       $res .= ' multiple="multiple"';
     if($this->size)
@@ -122,7 +122,9 @@ class InstanceComponent extends SimpleComponent {
   }
 
   public function init($space) {
-    return $space.'$(".twforms-select-'.$this->id.'").select2({placeholder: "'.$this->placeholder.'"});';
+    return
+      $space.'var self = $(\'select[name^="'.$this->id.'"]\',this);'.EOL.
+      $space.'self.select2({placeholder:"'.$this->placeholder.'"});';
     /*
     return 
       $space.'var self = $(\'select[name="'.$this->id.($this->multiple || $this->isArray ? "[]" : "").'"]\',this);'.EOL.

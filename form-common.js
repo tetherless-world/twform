@@ -249,16 +249,15 @@ TWForms = {
       this.id = "dp" + randId;
     });
     $('input[name*="_start"]',li).each(function() {
-      console.log(this);
       $(this).removeClass("hasDatepicker");
       $(this).datepicker({dateFormat:"yy-mm-dd"});
     });
     $('input[name*="_end"]',li).each(function() {
-      console.log(this);
       $(this).removeClass("hasDatepicker");
       $(this).datepicker({dateFormat:"yy-mm-dd"});
     });
-    
+    $('.select2-container',li).remove();
+    $('select',li).select2();
   },
   labelForField: function(field) {
     var label = field.find("span.label").text();
@@ -307,7 +306,7 @@ TWForms = {
     var indexOfFirstUnsetRequired = false;
     var indexOfLastCompletedEntry = 0;
     $("ul.compoundfield li.subfield", field).each(function(i) {
-      $("select, textarea, input", this).each(function() {
+      $("select[name!=''], textarea[name!=''], input[name!='']", this).each(function() {
         if ( $(this).val() != "" ) {
           indexOfLastCompletedEntry = i;
         }
@@ -321,7 +320,7 @@ TWForms = {
       }
       var satisfied = true;
       var isset = false;
-      requiredComponents.find("select, textarea, input").each(function(i) {
+      requiredComponents.find("select[name!=''], textarea[name!=''], input[name!='']").each(function(i) {
         if ( satisfied ) {
           satisfied = satisfied && ($(this).val() != "" || $(this).attr("name").endsWith("_end"));
           if ( !satisfied && errorSubcomponent == null ) {
@@ -341,7 +340,7 @@ TWForms = {
         indexOfFirstUnsetRequired = i;
       if ( satisfied && warningSubcomponent == null ) {
         optionalComponents = $(this).find(":not(.required)");
-        optionalComponents.find("select, textarea, input").each(function() {
+        optionalComponents.find("select[name!=''], textarea[name!=''], input[name!='']").each(function() {
           if ( $(this).val() == "" ) {
             warningIndex = i + 1;
             warningSubcomponent = $(this).attr("name")
@@ -567,9 +566,16 @@ $(function() {
   }
   //$("form[name='twform'] .field").find("textarea, select, input")
   $(document).delegate(
-    "form[name='twform'] .field textarea, "+
-      "form[name='twform'] .field select, " +
-      "form[name='twform'] .field input, ",
+    "form[name='twform']",
+    "submit",
+    function() {
+      TWForms.validateField(
+        $(this).parents(".field"), true
+      );
+    });
+  $(document).delegate(
+    "form[name='twform'] .field textarea[name!=''], "+
+    "form[name='twform'] .field input[name!=''], ",
     "change blur keyup",
     function() {
       TWForms.validateField(
