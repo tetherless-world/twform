@@ -222,9 +222,9 @@ form[name='twform'] input {
 form[name='twform'] input[type='submit'] {
     float: left;
     clear: both;
-    /* padding-top: 6pt; */
     border-radius: 0;
-    background-color: #427763;
+    /*background-color: #427763;*/
+    background-color: #75c585;
     -webkit-appearance: none;
     padding: 5px;
     color: white;
