@@ -230,6 +230,11 @@ Version: 2.1 Timestamp: Tue Jun 12 19:50:25 PDT 2012
 }
 
 /* results */
+.select2-container .select2-result {
+    list-style: none;
+    background: none;
+}
+
 .select2-container .select2-results {
   margin: 4px 4px 4px 0;
   padding: 0 0 0 4px;
