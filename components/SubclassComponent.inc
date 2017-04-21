@@ -76,7 +76,7 @@ class SubclassComponent extends SimpleComponent {
   }
 
   public function render() {
-    $res = '<select name="'.$this->id.($this->multiple || $this->isArray ? "[]" : "").'"';
+    $res = '<select class="twforms-subclass-select" name="'.$this->id.($this->multiple || $this->isArray ? "[]" : "").'"';
     if($this->multiple)
       $res .= ' multiple="multiple"';
     if($this->size)

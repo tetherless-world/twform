@@ -2,6 +2,12 @@ form[name='twform'], form[name='twform'] * {
     font-size: 9pt;
 }
 
+form[name='twform'] .twforms-subclass-select {
+    border-radius: 0;
+    -webkit-appearance: none;
+    padding: 5px;
+}
+
 form[name='twform'] select {
     margin: 0.25em 0;
 }
