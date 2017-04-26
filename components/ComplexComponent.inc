@@ -145,7 +145,8 @@ class CompoundComponent extends Component {
       if(0<preg_match("/^<twformfield(?P<attrs>([^\/>]*(\/[^>])?)*)(\/>|>((?P<body>[^<]*(<[^\/])?)*)<\/twformfield>)/",$content,$matches,PREG_OFFSET_CAPTURE)) {
         
         $params = TWForm::extractAttrs($matches["attrs"][0]);
-        $comp = $this->getForm()->createComponent($params, $twforms_namespaces);
+        $comp = TWFormUtil::createComponent($params["type"], $this->form, $this->logger);
+        $comp->processParams($params);
         
         //checking for isArray, and passing to subfields
         if ($this->getIsArray()) $comp->setIsArray( true );

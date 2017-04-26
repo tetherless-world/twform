@@ -37,15 +37,6 @@ abstract class Component {
   abstract public function getValue();
   abstract public function toSPARUL($node);
 
-  /**
-   * Validates a component in the form.
-   * @return array An array of errors when the component validated, will be
-   * empty if successful.
-   */
-  public function validate() {
-    return array("Field ".$this->getId()." is not valid.");
-  }
-
   public function getForm() { return $this->form; }
   public function setForm($form) { $this->form = $form; }
 

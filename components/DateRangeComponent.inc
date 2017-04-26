@@ -8,28 +8,6 @@ class DateRangeComponent extends SimpleComponent {
     $this->type = "daterange";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value==NULL) {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-      if($this->value["start"]==NULL) {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    }
-    $date1 = date_parse($this->value["start"]);
-    $date2 = date_parse($this->value["end"]);
-    if(!$date) {
-      return array("The value '".$this->value."' is not valid for field '".
-        $this->id."'.");
-    }
-    if($date["warning_count"]+$date["error_count"]>0) {
-      return array("The value '".$this->value."' is not valid for field '".
-        $this->id."'.");
-    }
-    return array();
-  }
-  
   public function getValue() {
     return $this->value;
   }

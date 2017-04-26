@@ -9,17 +9,6 @@ class AliasComponent extends SimpleComponent {
     $this->type = "alias";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value!="") {
-        return array();
-      } else {
-        return array("Field '".$this->id."' is required.");
-      }
-    }
-    return array();
-  }
-  
   public function getValue() {
     return $this->value;
   }

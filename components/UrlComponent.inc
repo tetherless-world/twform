@@ -10,25 +10,6 @@ class UrlComponent extends SimpleComponent {
     $this->type = "url";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value == "") {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    }
-    if($this->value=="") return array();
-    if(0==preg_match($regex, $this->value)) {
-      return array("The value '".$this->id."' does not have a valid URI scheme.");
-    } else {
-      $parts = explode(":", $this->value);
-      if($parts[0]=="http" || $parts[0]=="https") {
-        // TODO: more validation on HTTP URLs
-        return array();
-      }
-    }
-    return array();
-  }
-  
   public function getValue() {
     return $this->value;
   }

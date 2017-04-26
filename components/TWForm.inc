@@ -14,6 +14,7 @@ include_once("DateComponent.inc");
 include_once("DateRangeComponent.inc");
 include_once("TextareaComponent.inc");
 include_once("TextNode.inc");
+include_once("TWFormUtil.inc");
 
 /**
  * Defines a logger object for TWForms to provide feedback to users.
@@ -173,7 +174,6 @@ abstract class TWForm {
   protected $bodyContent = null;
   protected $fields = array();
   protected $data = NULL;
-  protected $oldData = NULL;
   protected $uri = NULL;
   private static $simulate=TRUE;
   protected $header=null;
@@ -390,7 +390,8 @@ abstract class TWForm {
         $params = TWForm::extractAttrs($matches["attrs"][0]);
         $params["#content"] = $matches["body"][0];
         $params["type"] = "compound";
-        $item = $this->createComponent($params);
+        $item = TWFormUtil::createComponent("compound", $this, $this->getLogger());
+        $item->processParams($params);
         $item->setInstClass($this->class);
         $this->fields[$item->getId()] = $item;
         $this->body[] = $item;
@@ -400,7 +401,8 @@ abstract class TWForm {
       else if(0<preg_match("/^<twformfield(?P<attrs>([^\/>]*(\/[^>])?)*)(\/>|>((?P<body>[^<]*(<[^\/])?)*)<\/twformfield>)/",
           $content,$matches,PREG_OFFSET_CAPTURE)) {
         $params = TWForm::extractAttrs($matches["attrs"][0]);
-        $item = $this->createComponent($params, $twforms_namespaces);
+        $item = TWFormUtil::createComponent($params["type"], $this, $this->getLogger());
+        $item->processParams($params);
         $item->setInstClass($this->class);
         $this->fields[$item->getId()] = $item;
         if(!TWForm::$editing || $item->getId() != "uri")
@@ -433,87 +435,6 @@ abstract class TWForm {
       $instURI = $this->getInstanceUri();
       $this->prepopulate($instURI);
     }
-  }
-
-  public function createComponent(&$params) {
-    $obj = null;
-    switch($params["type"]) {
-    case "compound":
-      $obj = new CompoundComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "text":
-      $obj = new TextComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "url":
-      $obj = new UrlComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "email":
-      $obj = new EmailComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "file":
-      $obj = new FileComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "alias":
-      $obj = new AliasComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "instance":
-      $obj = new InstanceComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "subclass":
-      $obj = new SubclassComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "date":
-      $obj = new DateComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "daterange":
-      $obj = new DateRangeComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    case "textarea":
-      $obj = new TextareaComponent();
-      $obj->setForm($this);
-      $obj->setLogger( $this->getLogger() ) ;
-      $obj->processParams($params);
-      break;
-    }
-
-    /*
-    if( isset( $obj ) )
-    {
-        $obj->dump( "" ) ;
-    }
-    */
-
-    return $obj;
   }
 
   /**
@@ -745,33 +666,6 @@ abstract class TWForm {
   }
 
   /**
-   * Generates a fresh bnode variable for use in queries
-   * @staticvar int $counter Keeps track of the next available bnode
-   * @return string Blank node identifier
-   */
-  protected static function getBnode() {
-    static $counter=0;
-    return "_:a".$counter++;
-  }
-
-  /**
-   * Returns the value of a file field based on whether a URI was specified or a document was uploaded
-   * @param string $field Name of the field to check
-   * @return string Value of the file field, null if field is invalid.
-   */
-  protected function valueOfFileField($field) {
-    if(!isset($_POST[$field."_method"])) {
-      return null;
-    }
-    else if($_POST[$field."_method"]=="internal") {
-      return $_POST[$field."_internal"];
-    }
-    else {
-      return $_POST[$field."_external"];
-    }
-  }
-
-  /**
    * Checks whether the field is marked required in the form.
    * @param string $field Name of field to check
    * @return boolean True if the field is required, false otherwise.
@@ -781,90 +675,6 @@ abstract class TWForm {
       return false;
     }
     return $this->fields[$field]->isRequired();
-  }
-
-  /**
-   * Returns the absolute path for an alias field
-   * @param string $field Name of field to retrieve
-   * @return string Absolute path identified by the field
-   */
-  protected function valueOfAliasField($field) {
-    if(0===strpos($_POST[$field."_base"],"http")) {
-      return $_POST[$field."_base"]."/".$_POST[$field];
-    }
-    else {
-      return ($_SERVER["HTTPS"] ? "https://" : "http://").
-        $_SERVER["SERVER_NAME"].$this->getBasePath().
-        $_POST[$field."_base"]."/".$_POST[$field];
-    }
-  }
-
-  protected function valueOfFieldRel($field) {
-    if(isset($_POST[$field."_rel"])) {
-      return $_POST[$field."_rel"];
-    }
-    return null;
-  }
-
-  protected function valueOfFieldRev($field) {
-    if(isset($_POST[$field."_rev"])) {
-      return $_POST[$field."_rev"];
-    }
-    return null;
-  }
-
-  protected function setProperty($s, $p, $o, $t, $d=null) {
-    if($o=="") return;
-    if(is_array($s)) {
-      foreach($s as $s2) {
-        if(!isset($this->data[$s2]))
-          $this->data[$s2] = array();
-        if(!isset($this->data[$s2][$p]))
-          $this->data[$s2][$p] = array();
-        if(is_array($o)) {
-          foreach($o as $o2) {
-            $arr = array("type"=>$t,
-                  "value"=>$o2);
-            if($d) {
-              $arr["datatype"] = $d;
-            }
-            $this->data[$s][$p][] = $arr;
-          }
-        }
-        else {
-          $arr = array("type"=>$t,
-                "value"=>$o);
-          if($d) {
-            $arr["datatype"] = $d;
-          }
-          $this->data[$s][$p][] = $arr;
-        }
-      }
-    }
-    else {
-      if(!isset($this->data[$s]))
-        $this->data[$s] = array();
-      if(!isset($this->data[$s][$p]))
-        $this->data[$s][$p] = array();
-      if(is_array($o)) {
-        foreach($o as $o2) {
-          $arr = array("type"=>$t,
-                "value"=>$o2);
-          if($d) {
-            $arr["datatype"] = $d;
-          }
-          $this->data[$s][$p][] = $arr;
-        }
-      }
-      else {
-        $arr = array("type"=>$t,
-        "value"=>$o);
-        if($d) {
-          $arr["datatype"] = $d;
-        }
-        $this->data[$s][$p][] = $arr;
-      }
-    }
   }
 
   public static function segmentURI($uri) {
@@ -895,59 +705,59 @@ abstract class TWForm {
     $type = $_POST[$field."_type"];
     switch($type) {
     case "alias":
-      $page = $this->valueOfAliasField($field);
+      $page = TWFormUtil::valueOfAliasField($field, $this->getBasePath());
       if(!$obj)
         $obj = $page;
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "uri";
       break;
     case "text":
       if(!$obj)
         $obj = $_POST[$field];
-      drupal_set_message("Object: $obj", "status");
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
-      drupal_set_message("Rel: $rel", "status");
-      drupal_set_message("Rev: $rev", "status");
+      $this->getLogger()->logStatus("Object: $obj");
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
+      $this->getLogger()->logStatus("Rel: $rel");
+      $this->getLogger()->logStatus("Rev: $rev");
       $type = "literal";
       $dtype = "http://www.w3.org/2001/XMLSchema#string";
       break;
     case "daterange":
       $start = $_POST[$field."_start"];
       $end = $_POST[$field."_end"];
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       if($start) {
         if(FALSE===strpos($start,"T"))
           $start .= "T00:00:00".TWForm::getTimezone($start);
-        $obj = $this->getBnode();
+        $obj = TWFormUtil::getBnode();
         $type = "bnode";
-        $this->setProperty($obj,
+        TWFormUtil::setProperty($this->data, $obj,
           "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
           "http://www.w3.org/2006/time#Interval", "uri");
-        $startNode = $this->getBnode();
-        $this->setProperty($obj,
+        $startNode = TWFormUtil::getBnode();
+        TWFormUtil::setProperty($this->data, $obj,
           "http://www.w3.org/2006/time#hasBeginning",
           $startNode, "bnode");
-        $this->setProperty($startNode,
+        TWFormUtil::setProperty($this->data, $startNode,
           "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
           "http://www.w3.org/2006/time#Instant", "uri");
-        $this->setProperty($startNode,
+        TWFormUtil::setProperty($this->data, $startNode,
           "http://www.w3.org/2006/time#inXSDDateTime",
           $start, "literal",
           "http://www.w3.org/2001/XMLSchema#dateTime");
         if($end) {
           if(FALSE==strpos($end,"T"))
             $end .= "T23:59:59".TWForm::getTimezone($start);
-          $endNode = $this->getBnode();
-          $this->setProperty($obj,
+          $endNode = TWFormUtil::getBnode();
+          TWFormUtil::setProperty($this->data, $obj,
                   "http://www.w3.org/2006/time#hasEnd",
                   $endNode, "bnode");
-          $this->setProperty($endNode,
+          TWFormUtil::setProperty($this->data, $endNode,
                   "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
                   "http://www.w3.org/2006/time#Instant", "uri");
-          $this->setProperty($endNode,
+          TWFormUtil::setProperty($this->data, $endNode,
                   "http://www.w3.org/2006/time#inXSDDateTime",
                   $end, "literal",
                   "http://www.w3.org/2001/XMLSchema#dateTime");
@@ -960,24 +770,24 @@ abstract class TWForm {
     case "url":
       if(!$obj)
         $obj = $_POST[$field];
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "uri";
       break;
     case "email":
       if(!$obj)
         $obj = $_POST[$field];
       $obj = "mailto:".$obj;
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "uri";
       break;
     case "textarea":
       if(!$obj)
         $obj = $_POST[$field];
       $obj = "<div xmlns=\"http://www.w3.org/1999/xhtml\">".$obj."</div>";
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "literal";
       $dtype = "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral";
       break;
@@ -985,8 +795,8 @@ abstract class TWForm {
       if(!$obj)
         $obj = $_POST[$field];
       if($obj == "") return $this->data;
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "uri";
       break;
     case "subclass":
@@ -997,9 +807,9 @@ abstract class TWForm {
       break;
     case "file":
       if(!$obj)
-        $obj = $this->valueOfFileField($field);
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+        $obj = TWFormUtil::valueOfFileField($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       $type = "uri";
       break;
     case "date":
@@ -1010,33 +820,33 @@ abstract class TWForm {
       if($val=="") return $this->data;
       if(FALSE===strpos($field,"T"))
         $val = $val."T00:00:00".TWForm::getTimezone($val);
-      $rel = $this->valueOfFieldRel($field);
-      $bnode = $this->getBnode();
-      $this->setProperty($bnode,
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $bnode = TWFormUtil::getBnode();
+      TWFormUtil::setProperty($this->data, $bnode,
         "http://www.w3.org/2006/time#inXSDDateTime",
         $val, "literal",
         "http://www.w3.org/2001/XMLSchema#dateTime");
-      $this->setProperty($bnode,
+      TWFormUtil::setProperty($this->data, $bnode,
         "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
         "http://www.w3.org/2006/time#Instant", "uri");
       $obj = $bnode;
       $type = "bnode";
       break;
     default:
-      drupal_set_message("Field '$field' of unknown type '$type'.","warning");
+      $this->getLogger()->logStatus("Field '$field' of unknown type '$type'.","warning");
       return false;
     }
     if($rel) {
       if($obj == "") return $this->data;
-      $this->setProperty($uri, $rel, $obj, $type, $dtype);
+      TWFormUtil::setProperty($this->data, $uri, $rel, $obj, $type, $dtype);
     }
     else if($rev) {
       if($obj == "") return $this->data;
       if($uri == "") return $this->data;
-      $this->setProperty($obj, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
+      TWFormUtil::setProperty($this->data, $obj, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
     }
     else {
-      drupal_set_message("No rel or rev set for input '$field'.","error");
+      $this->getLogger()->logStatus("No rel or rev set for input '$field'.","error");
       return false;
     }
     return $this->data;
@@ -1091,7 +901,7 @@ abstract class TWForm {
 
     // we don't want to error out if there aren't any values, but we also don't want to add values
     if( $hasvalue == false ) {
-      drupal_set_message("twforms_process_compound_results field '$field' has no values","status");
+      $this->getLogger()->logStatus("twforms_process_compound_results field '$field' has no values","status");
       return $this->data;
     }
 
@@ -1104,50 +914,50 @@ abstract class TWForm {
         break;
       }
       for($i=0;$i<$len;$i++) {
-        $self = $this->getBnode();
-        $this->setProperty($self,
+        $self = TWFormUtil::getBnode();
+        TWFormUtil::setProperty($this->data, $self,
           "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
           $class, "uri");
         foreach($values as $subfield => $bits) {
           $value = $bits["value"][$i];
           if(!$this->processField($subfield, $self, $value)) {
-            drupal_set_message("processField returned false for subfield '$subfield' of compound element '$field'.","error");
+            $this->getLogger()->logStatus("processField returned false for subfield '$subfield' of compound element '$field'.","error");
             return false;
           }
         }
         if($order)
-          $this->setProperty($self, $order, $i+1, "literal",
+          TWFormUtil::setProperty($this->data, $self, $order, $i+1, "literal",
                   "http://www.w3.org/2001/XMLSchema#int");
-        $rel = $this->valueOfFieldRel($field);
-        $rev = $this->valueOfFieldRev($field);
+        $rel = TWFormUtil::valueOfFieldRel($field);
+        $rev = TWFormUtil::valueOfFieldRev($field);
         if($rel) {
-          $this->setProperty($uri, $rel, $self, "bnode");
+          TWFormUtil::setProperty($this->data, $uri, $rel, $self, "bnode");
         }
         else if($rev) {
-          $this->setProperty($self, $rev, $uri, "uri");
+          TWFormUtil::setProperty($this->data, $self, $rev, $uri, "uri");
         }
         else {
-          drupal_set_message("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
+          $this->getLogger()->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
           return false;
         }
       }
     }
     else {
-      $self = $this->getBnode();
+      $self = TWFormUtil::getBnode();
       foreach($values as $subfield => $bits) {
         if(!$this->processField($subfield, $self))
           return false;
       }
-      $rel = $this->valueOfFieldRel($field);
-      $rev = $this->valueOfFieldRev($field);
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
       if($rel) {
-        $this->setProperty($uri, $rel, $self, "bnode");
+        TWFormUtil::setProperty($this->data, $uri, $rel, $self, "bnode");
       }
       else if($rev) {
-        $this->setProperty($self, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
+        TWFormUtil::setProperty($this->data, $self, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
       }
       else {
-        drupal_set_message("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
+        $this->getLogger()->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
         return false;
       }
     }
@@ -1155,7 +965,7 @@ abstract class TWForm {
   }
 
   protected function processPOST() {
-    drupal_set_message("TWForm::processPOST", "status");
+    $this->getLogger()->logStatus("TWForm::processPOST");
     $this->data = array();
 
     // Determine all the fields of the form in the post and what type of
@@ -1171,16 +981,14 @@ abstract class TWForm {
         }
       }
     }
-    //print( "<br/><br/>" ) ;
-    //var_dump( $fields ) ;
 
     // determine what the URI is of this new instance. If the URI is a
     // file then we grab the file URI. If set by the user then there
     // will be an alias type uri. Else we generate a URI given the type
     // of instance we're creating and time information.
     if(isset($fields["uri"])) {
-      $uri = ($fields["uri"] == "file" ? $this->valueOfFileField("uri") :
-        ($fields["uri"] == "alias" ? $this->valueOfAliasField("uri") :
+      $uri = ($fields["uri"] == "file" ? TWFormUtil::valueOfFileField("uri") :
+        ($fields["uri"] == "alias" ? TWFormUtil::valueOfAliasField("uri", $this->getBasePath()) :
         $_POST["uri"]));
     } else if( TWForm::$editing && isset($_POST["uri"]) ) {
       $uri = $_POST["uri"];
@@ -1192,7 +1000,7 @@ abstract class TWForm {
       $uri = TWSparql::getEngine()->getIbase().$uri;
     }
     if($uri=="") {
-      drupal_set_message("No URI specified in form.","error");
+      $this->getLogger()->logStatus("No URI specified in form.","error");
       return null;
     }
     $this->uri = $uri;
@@ -1201,7 +1009,7 @@ abstract class TWForm {
 
     // set the type of the new instance given the class defined in the
     // header
-    $this->setProperty($uri, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", $_POST["class"], "uri");
+    TWFormUtil::setProperty($this->data, $uri, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", $_POST["class"], "uri");
 
     // iterate through each of the fields now and process them given
     // their type.
@@ -1211,7 +1019,7 @@ abstract class TWForm {
       // FIXME: we already know the type. It's in the fields array. We
       // are we getting it again?
       $type = $_POST[$field."_type"];
-      drupal_set_message("Processing $field of type $type", "status");
+      $this->getLogger()->logStatus("Processing $field of type $type");
       switch($type) {
       case "compound":
         $obj = $this->processCompound($field, $uri);
@@ -1231,16 +1039,16 @@ abstract class TWForm {
   }
 
   public function checkPOST() {
-    drupal_set_message("TWForm::checkPOST", "status");
+    $this->getLogger()->logStatus("TWForm::checkPOST");
     if(isset($_POST["twform_id"])) {
       if($this->processPOST()) {
         $ttl = $this->toSPARUL();
-        drupal_set_message("Turtle: $ttl", "status");
+        $this->getLogger()->logStatus("Turtle: $ttl");
       }
       if ($ttl) {
         $path = TWForm::getBackupPath();
         if($path!="") {
-          $uri = ($_POST["uri_type"]=="file" ? $this->valueOfFileField("uri") : $_POST["uri"]);
+          $uri = ($_POST["uri_type"]=="file" ? TWFormUtil::valueOfFileField("uri") : $_POST["uri"]);
           $uri = TWForm::segmentURI($_POST["class"]);
           $uri = $uri['id'];
           $curTime = gettimeofday();
@@ -1250,7 +1058,7 @@ abstract class TWForm {
           $fd = fopen($path.$uri.".rdf","w");
           fwrite($fd, $this->toRDF());
           fclose($fd);
-          drupal_set_message("Saved backup file.", "status");
+          $this->getLogger()->logStatus("Saved backup file.");
         }
 
         $cmd = "request=".urlencode("INSERT DATA {\r\n".$ttl."\r\n}");
@@ -1329,10 +1137,6 @@ abstract class TWForm {
       }
     }
     return false;
-  }
-
-  public function validate() {
-    return FALSE;
   }
 
   public function save() {

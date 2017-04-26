@@ -10,19 +10,6 @@ class EmailComponent extends SimpleComponent {
     $this->type = "email";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value=="") {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    }
-    if($this->value==""||0==preg_match(EmailComponent::$regex, $this->value)) {
-      return array("The value '".$this->value."' is not a valid RFC 2822 email ".
-        "address in field '".$this->id."'");
-    }
-    return array();
-  }
-  
   public function getValue() {
     
   }

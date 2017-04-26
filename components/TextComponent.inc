@@ -8,13 +8,6 @@ class TextComponent extends SimpleComponent {
     $this->type = "text";
   }
 
-  public function validate() {
-    if($this->required && $this->value=="") {
-      return array("Field '".$this->id."' cannot be left blank.");
-    }
-    return array();
-  }
-
   public function getValue() {
     return $this->value;
   }
