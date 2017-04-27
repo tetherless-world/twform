@@ -89,7 +89,7 @@ class DrupalTWForm extends TWForm {
     return $form;
   }
 
-  protected function getBasePath() {
+  public function getBasePath() {
     return base_path();
   }
 

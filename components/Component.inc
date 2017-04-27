@@ -35,6 +35,7 @@ abstract class Component {
   abstract public function prepopulate($inst, $top);
   abstract public function postpopulate($inst, $entries);
   abstract public function getValue();
+  abstract public function processPOST(&$data, $field, $uri, $obj=NULL);
   abstract public function toSPARUL($node);
 
   public function getForm() { return $this->form; }
@@ -299,6 +300,23 @@ abstract class Component {
 
   public function setPrefix($prefix) {
     $this->id = $prefix.$this->raw_id;
+  }
+
+  protected function postProcessPOST(&$data, $uri, $obj, $type, $dtype) {
+    if($this->rel) {
+      if($obj == "") return true;
+      TWFormUtil::setProperty($data, $uri, $this->rel, $obj, $type, $dtype);
+    }
+    else if($this->rev) {
+      if($obj == "") return true;
+      if($uri == "") return true;
+      TWFormUtil::setProperty($data, $obj, $this->rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
+    }
+    else {
+      $logger->logStatus("No rel or rev set for input '$field'.","error");
+      return false;
+    }
+    return true;
   }
 
   public function dump($spaces)

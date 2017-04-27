@@ -78,6 +78,17 @@ class TextComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "literal";
+    $dtype = "http://www.w3.org/2001/XMLSchema#string";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces TextComponent:" ) ;

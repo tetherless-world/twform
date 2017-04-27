@@ -117,6 +117,18 @@ class AliasComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $page = TWFormUtil::valueOfAliasField($field, $this->form->getBasePath());
+    if(!$obj) {
+      $obj = $page;
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    $dtype = null;
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces AliasComponent:" ) ;

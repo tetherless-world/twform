@@ -68,6 +68,18 @@ class EmailComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $obj = "mailto:".$obj;
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces EmailComponent:" ) ;

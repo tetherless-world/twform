@@ -133,6 +133,18 @@ class InstanceComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    if($obj == "") return true;
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces InstanceComponent:" ) ;

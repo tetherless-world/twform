@@ -203,7 +203,7 @@ abstract class TWForm {
    * Returns the base path of the underlying CMS
    * @return string
    */
-  protected abstract function getBasePath();
+  public abstract function getBasePath();
 
   /**
    * Gets the alternate base path for alias components
@@ -700,270 +700,6 @@ abstract class TWForm {
     return array("ns"=>"","id"=>$uri);
   }
 
-  protected function processField($field, $uri, $obj=NULL) {
-    $rel = $rev = $type = $dtype = null;
-    $type = $_POST[$field."_type"];
-    switch($type) {
-    case "alias":
-      $page = TWFormUtil::valueOfAliasField($field, $this->getBasePath());
-      if(!$obj)
-        $obj = $page;
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "uri";
-      break;
-    case "text":
-      if(!$obj)
-        $obj = $_POST[$field];
-      $this->getLogger()->logStatus("Object: $obj");
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $this->getLogger()->logStatus("Rel: $rel");
-      $this->getLogger()->logStatus("Rev: $rev");
-      $type = "literal";
-      $dtype = "http://www.w3.org/2001/XMLSchema#string";
-      break;
-    case "daterange":
-      $start = $_POST[$field."_start"];
-      $end = $_POST[$field."_end"];
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      if($start) {
-        if(FALSE===strpos($start,"T"))
-          $start .= "T00:00:00".TWForm::getTimezone($start);
-        $obj = TWFormUtil::getBnode();
-        $type = "bnode";
-        TWFormUtil::setProperty($this->data, $obj,
-          "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-          "http://www.w3.org/2006/time#Interval", "uri");
-        $startNode = TWFormUtil::getBnode();
-        TWFormUtil::setProperty($this->data, $obj,
-          "http://www.w3.org/2006/time#hasBeginning",
-          $startNode, "bnode");
-        TWFormUtil::setProperty($this->data, $startNode,
-          "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-          "http://www.w3.org/2006/time#Instant", "uri");
-        TWFormUtil::setProperty($this->data, $startNode,
-          "http://www.w3.org/2006/time#inXSDDateTime",
-          $start, "literal",
-          "http://www.w3.org/2001/XMLSchema#dateTime");
-        if($end) {
-          if(FALSE==strpos($end,"T"))
-            $end .= "T23:59:59".TWForm::getTimezone($start);
-          $endNode = TWFormUtil::getBnode();
-          TWFormUtil::setProperty($this->data, $obj,
-                  "http://www.w3.org/2006/time#hasEnd",
-                  $endNode, "bnode");
-          TWFormUtil::setProperty($this->data, $endNode,
-                  "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-                  "http://www.w3.org/2006/time#Instant", "uri");
-          TWFormUtil::setProperty($this->data, $endNode,
-                  "http://www.w3.org/2006/time#inXSDDateTime",
-                  $end, "literal",
-                  "http://www.w3.org/2001/XMLSchema#dateTime");
-        }
-      }
-      else {
-        return $this->data;
-      }
-      break;
-    case "url":
-      if(!$obj)
-        $obj = $_POST[$field];
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "uri";
-      break;
-    case "email":
-      if(!$obj)
-        $obj = $_POST[$field];
-      $obj = "mailto:".$obj;
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "uri";
-      break;
-    case "textarea":
-      if(!$obj)
-        $obj = $_POST[$field];
-      $obj = "<div xmlns=\"http://www.w3.org/1999/xhtml\">".$obj."</div>";
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "literal";
-      $dtype = "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral";
-      break;
-    case "instance":
-      if(!$obj)
-        $obj = $_POST[$field];
-      if($obj == "") return $this->data;
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "uri";
-      break;
-    case "subclass":
-      if(!$obj)
-        $obj = $_POST[$field];
-      $rel = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-      $type = "uri";
-      break;
-    case "file":
-      if(!$obj)
-        $obj = TWFormUtil::valueOfFileField($field);
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      $type = "uri";
-      break;
-    case "date":
-      if($obj)
-        $val = $obj;
-      else
-        $val = $_POST[$field];
-      if($val=="") return $this->data;
-      if(FALSE===strpos($field,"T"))
-        $val = $val."T00:00:00".TWForm::getTimezone($val);
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $bnode = TWFormUtil::getBnode();
-      TWFormUtil::setProperty($this->data, $bnode,
-        "http://www.w3.org/2006/time#inXSDDateTime",
-        $val, "literal",
-        "http://www.w3.org/2001/XMLSchema#dateTime");
-      TWFormUtil::setProperty($this->data, $bnode,
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-        "http://www.w3.org/2006/time#Instant", "uri");
-      $obj = $bnode;
-      $type = "bnode";
-      break;
-    default:
-      $this->getLogger()->logStatus("Field '$field' of unknown type '$type'.","warning");
-      return false;
-    }
-    if($rel) {
-      if($obj == "") return $this->data;
-      TWFormUtil::setProperty($this->data, $uri, $rel, $obj, $type, $dtype);
-    }
-    else if($rev) {
-      if($obj == "") return $this->data;
-      if($uri == "") return $this->data;
-      TWFormUtil::setProperty($this->data, $obj, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
-    }
-    else {
-      $this->getLogger()->logStatus("No rel or rev set for input '$field'.","error");
-      return false;
-    }
-    return $this->data;
-  }
-
-  protected function processCompound($field, $uri) {
-    $subfields = array();
-    $class = $_POST[$field."_class"];
-    foreach($_POST as $subfield => $value) {
-      if(0===strpos($subfield,$field."_")) {
-        $pos = strpos($subfield,"_type",strlen($field)+1);
-        if($pos!==FALSE) {
-          $substr = substr($subfield,0,$pos);
-          $subfields[$substr] = true;
-        }
-      }
-    }
-
-    $values = array();
-    $hasvalue = false ;
-    foreach($subfields as $subfield => $exists) {
-      $info = array();
-      $info["type"] = $_POST[$subfield."_type"];
-      $myvalue = $_POST[$subfield];
-
-      // let's see if this compound has any values. If it doesn't, then we don't want to add
-      // any data.
-      if( is_array( $myvalue ) ) {
-        // we want to ignore the subclass, since it will always have a value of at least
-        // the top most class in the class tree.
-        if( $info["type"] != "subclass" ) {
-          // implode will create a single string with all of the values. If that string
-          // is empty, then there are no values
-          $fullvalue = implode( "", $myvalue ) ;
-          if( strlen( $fullvalue ) > 0 ) {
-            // hey ... we have values
-            $hasvalue = true ;
-          }
-        }
-      }
-      else {
-        // simple test on a string. If the string has length, then there is a value
-        // but, you ask, what if they just hit space a bunch of times.
-        $myvalue = trim( $myvalue ) ;
-        if( strlen( $myvalue ) > 0 ) {
-            $hasvalue = true ;
-        }
-      }
-      $info["value"] = $myvalue;
-      $values[$subfield] = $info;
-    }
-
-    // we don't want to error out if there aren't any values, but we also don't want to add values
-    if( $hasvalue == false ) {
-      $this->getLogger()->logStatus("twforms_process_compound_results field '$field' has no values","status");
-      return $this->data;
-    }
-
-    if($_POST[$field."_many"]=="true") {
-      $order = $_POST[$field."_order"];
-      if($order == "false") $order = null;
-      $len = 0;
-      foreach($values as $subfield => $bits) {
-        $len = count($bits["value"]);
-        break;
-      }
-      for($i=0;$i<$len;$i++) {
-        $self = TWFormUtil::getBnode();
-        TWFormUtil::setProperty($this->data, $self,
-          "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
-          $class, "uri");
-        foreach($values as $subfield => $bits) {
-          $value = $bits["value"][$i];
-          if(!$this->processField($subfield, $self, $value)) {
-            $this->getLogger()->logStatus("processField returned false for subfield '$subfield' of compound element '$field'.","error");
-            return false;
-          }
-        }
-        if($order)
-          TWFormUtil::setProperty($this->data, $self, $order, $i+1, "literal",
-                  "http://www.w3.org/2001/XMLSchema#int");
-        $rel = TWFormUtil::valueOfFieldRel($field);
-        $rev = TWFormUtil::valueOfFieldRev($field);
-        if($rel) {
-          TWFormUtil::setProperty($this->data, $uri, $rel, $self, "bnode");
-        }
-        else if($rev) {
-          TWFormUtil::setProperty($this->data, $self, $rev, $uri, "uri");
-        }
-        else {
-          $this->getLogger()->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
-          return false;
-        }
-      }
-    }
-    else {
-      $self = TWFormUtil::getBnode();
-      foreach($values as $subfield => $bits) {
-        if(!$this->processField($subfield, $self))
-          return false;
-      }
-      $rel = TWFormUtil::valueOfFieldRel($field);
-      $rev = TWFormUtil::valueOfFieldRev($field);
-      if($rel) {
-        TWFormUtil::setProperty($this->data, $uri, $rel, $self, "bnode");
-      }
-      else if($rev) {
-        TWFormUtil::setProperty($this->data, $self, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
-      }
-      else {
-        $this->getLogger()->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
-        return false;
-      }
-    }
-    return $this->data;
-  }
-
   protected function processPOST() {
     $this->getLogger()->logStatus("TWForm::processPOST");
     $this->data = array();
@@ -1005,8 +741,6 @@ abstract class TWForm {
     }
     $this->uri = $uri;
 
-    //print( "<br/><br/>uri = $uri" ) ;
-
     // set the type of the new instance given the class defined in the
     // header
     TWFormUtil::setProperty($this->data, $uri, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", $_POST["class"], "uri");
@@ -1016,19 +750,19 @@ abstract class TWForm {
     foreach($fields as $field => $type) {
       // skip the uri field. We've already dealth with that one
       if($field=="uri") continue;
-      // FIXME: we already know the type. It's in the fields array. We
-      // are we getting it again?
+
       $type = $_POST[$field."_type"];
       $this->getLogger()->logStatus("Processing $field of type $type");
-      switch($type) {
-      case "compound":
-        $obj = $this->processCompound($field, $uri);
-        if(!$obj) return false;
-        break;
-      default:
-        $obj = $this->processField($field, $uri);
-        if(!$obj) return false;
-        break;
+
+      $component = TWFormUtil::createComponent($type, $this, $this->getLogger());
+      if(!$component) {
+        $this->getLogger()->logStatus("No component of type $type");
+        return false;
+      }
+      $result = $component->processPOST($this->data, $field, $uri, null);
+      if(!$result) {
+        $this->getLogger()->logStatus("Failed to process post for $field of type $type");
+        return false;
       }
     }
     return true;

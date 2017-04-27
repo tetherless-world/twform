@@ -81,6 +81,30 @@ class DateComponent extends SimpleComponent {
       $space.'self.datepicker({dateFormat:"yy-mm-dd"});';
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if($obj) {
+      $val = $obj;
+    } else {
+      $val = $_POST[$field];
+    }
+    if($val=="") return true;
+    if(FALSE===strpos($field,"T"))
+      $val = $val."T04:00:00".TWForm::getTimezone($val);
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $bnode = TWFormUtil::getBnode();
+    TWFormUtil::setProperty($data, $bnode,
+      "http://www.w3.org/2006/time#inXSDDateTime",
+      $val, "literal",
+      "http://www.w3.org/2001/XMLSchema#dateTime");
+    TWFormUtil::setProperty($data, $bnode,
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      "http://www.w3.org/2006/time#Instant", "uri");
+    $obj = $bnode;
+    $type = "bnode";
+    $dtype = null;
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces DateComponent:" ) ;

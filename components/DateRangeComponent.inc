@@ -113,6 +113,52 @@ class DateRangeComponent extends SimpleComponent {
       $space.'self.datepicker({dateFormat:"yy-mm-dd"});';
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    $start = $_POST[$field."_start"];
+    $end = $_POST[$field."_end"];
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    if($start) {
+      if(FALSE===strpos($start,"T"))
+        $start .= "T04:00:00".TWForm::getTimezone($start);
+      $obj = TWFormUtil::getBnode();
+      $type = "bnode";
+      TWFormUtil::setProperty($data, $obj,
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+        "http://www.w3.org/2006/time#Interval", "uri");
+      $startNode = TWFormUtil::getBnode();
+      TWFormUtil::setProperty($data, $obj,
+        "http://www.w3.org/2006/time#hasBeginning",
+        $startNode, "bnode");
+      TWFormUtil::setProperty($data, $startNode,
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+        "http://www.w3.org/2006/time#Instant", "uri");
+      TWFormUtil::setProperty($data, $startNode,
+        "http://www.w3.org/2006/time#inXSDDateTime",
+        $start, "literal",
+        "http://www.w3.org/2001/XMLSchema#dateTime");
+      if($end) {
+        if(FALSE==strpos($end,"T"))
+          $end .= "T23:59:59".TWForm::getTimezone($start);
+        $endNode = TWFormUtil::getBnode();
+        TWFormUtil::setProperty($data, $obj,
+                "http://www.w3.org/2006/time#hasEnd",
+                $endNode, "bnode");
+        TWFormUtil::setProperty($data, $endNode,
+                "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+                "http://www.w3.org/2006/time#Instant", "uri");
+        TWFormUtil::setProperty($data, $endNode,
+                "http://www.w3.org/2006/time#inXSDDateTime",
+                $end, "literal",
+                "http://www.w3.org/2001/XMLSchema#dateTime");
+      }
+    } else {
+      return true;
+    }
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces DateRangeComponent:" ) ;

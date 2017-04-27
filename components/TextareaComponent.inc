@@ -87,6 +87,18 @@ class TextareaComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $obj = "<div xmlns=\"http://www.w3.org/1999/xhtml\">".$obj."</div>";
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "literal";
+    $dtype = "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces TextareaComponent:" ) ;

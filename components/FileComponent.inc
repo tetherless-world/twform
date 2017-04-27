@@ -78,6 +78,17 @@ class FileComponent extends SimpleComponent {
       $space.'TWForms.fileUploadRadios(radios,upload,url);';
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = TWFormUtil::valueOfFileField($field);
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces FileComponent:" ) ;

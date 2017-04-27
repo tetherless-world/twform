@@ -96,6 +96,16 @@ class SubclassComponent extends SimpleComponent {
     return "";
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $this->rel = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
+  }
+
   public function dump($spaces)
   {
       $this->getLogger()->logStatus( "$spaces SubclassComponent:" ) ;
