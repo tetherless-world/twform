@@ -11,18 +11,6 @@ class FileComponent extends SimpleComponent {
     return $this->value;
   }
   
-  public function toSPARUL($node) {
-    if(!$this->value) return "";
-    if($this->rel) {
-      return "$node <$this->rel> <$this->value> . ";
-    } else if($this->rev) {
-      return "<$this->value> <$this->rev> $node . ";
-    } else {
-      user_error("Neither rel nor rev specified on URL component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();

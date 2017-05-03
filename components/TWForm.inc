@@ -173,6 +173,7 @@ abstract class TWForm {
   public $submit = "Save Instance";
   protected $bodyContent = null;
   protected $fields = array();
+  protected $components = array();
   protected $data = NULL;
   protected $uri = NULL;
   private static $simulate=TRUE;
@@ -523,72 +524,19 @@ abstract class TWForm {
     return $res;
   }
 
-  /**
-   * Converts the form POST data into an RDF/XML representation
+  /** Converts the form POST data into an RDF/XML representation
+   *
+   * Most of the work is done with the data stored here as the processPOST
+   * method stores everything in this->data. But we allow the components
+   * to add to the rdf or create their own rdf if they need to
+   *
    * @return string RDF/XML document containing form data
    */
   public function toRDF() {
-    $nsLookup = array();
-    foreach(TWForm::$namespaces as $ns => $uri) {
-      $nsLookup[$uri] = $ns;
+    $result = TWFormUtil::toRDF($this->data);
+    foreach($this->components as $component) {
+      $result .= $component->toRDF();
     }
-    $counter = 0;
-    $result = "";
-    foreach($this->data as $subj => $props) {
-      $sSplit = TWForm::segmentURI($subj);
-      if($sSplit["ns"]!="_:"&&!isset($nsLookup[$sSplit["ns"]])) {
-        $ns = "j.$counter";
-        $counter++;
-        TWForm::$namespaces[$ns] = $sSplit["ns"];
-        $nsLookup[$sSplit["ns"]] = $ns;
-      }
-      $result .= "<rdf:Description ";
-      if($sSplit["ns"]=="_:") {
-        $result .= "rdf:nodeID=\"".$sSplit["id"]."\">\r\n";
-      } else {
-        $result .= "rdf:about=\"".$subj."\">\r\n";
-      }
-      foreach($props as $prop => $objs) {
-        $pSplit = TWForm::segmentURI($prop);
-        if(!isset($nsLookup[$pSplit["ns"]])) {
-          $ns = "j.$counter";
-          $counter++;
-          TWForm::$namespaces[$ns] = $pSplit["ns"];
-          $nsLookup[$pSplit["ns"]] = $ns;
-        }
-        foreach($objs as $obj) {
-          if($obj["type"]=="uri") {
-            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].
-              " rdf:resource=\"".$obj["value"]."\"/>\r\n";
-          } else if($obj["type"]=="literal") {
-            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"];
-            if(isset($obj["datatype"]) && $obj["datatype"] ==
-               "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral") {
-              $result .= " rdf:parseType=\"Literal\"";
-            } else if(isset($obj["datatype"])) {
-              $result .= " rdf:datatype=\"".$obj["datatype"]."\"";
-            } else if(isset($obj["lang"])) {
-              $result .= " xml:lang=\"".$obj["lang"]."\"";
-            }
-            $result .= ">";
-            $result .= $obj["value"];
-            $result .= "</".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].">\r\n";
-          } else if($obj["type"]=="bnode") {
-            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].
-              " rdf:nodeID=\"".substr($obj["value"],2)."\"/>\r\n";
-          }
-        }
-      }
-      $result .= "</rdf:Description>\r\n";
-    }
-    $header = "<?xml version=\"1.0\"?><rdf:RDF";
-    foreach($nsLookup as $uri => $ns) {
-      if($uri!="")
-        $header .= " xmlns:$ns=\"$uri\"";
-    }
-    $header .= ">\r\n";
-    $result = $header . $result;
-    $result .= "</rdf:RDF>";
     return $result;
   }
 
@@ -600,33 +548,18 @@ abstract class TWForm {
 
   }
 
-  /**
-   * Converts the form POST data into a SPARQL 1.1 Update request
+  /** Converts the form POST data into a SPARQL 1.1 Update request
+   *
+   * Most of the work is done with the data stored here as the processPOST
+   * method stores everything in this->data. But we allow the components
+   * to add to the ttl if they need to
+   *
    * @return string SPARUL request for updating the triple store
    */
   public function toSPARUL() {
-    $output = "";
-    foreach($this->data as $s => $pmap) {
-      foreach($pmap as $p => $oarr) {
-        foreach($oarr as $o) {
-          $sb = preg_match("/^_:/",$s); //check if subject is blank
-          if ($sb) $output .= "$s <$p> ";
-          else $output .= "<$s> <$p> ";
-          if ($o['type'] == 'uri') //print URI object
-            $output .= '<'.$o['value']."> .\n";
-          else if ($o['type'] == 'literal') { //print literal object
-            $val = $o['value'];
-            $val = preg_replace('/\r/','',$val);
-            $val = preg_replace('/\n/','',$val);
-            $output .= '"'.preg_replace("/\"/","\\\"",$val).'"';
-            if (array_key_exists('datatype',$o)) $output .= '^^<'.$o['datatype'].'>';
-            if (array_key_exists('lang',$o)) $output .= '@'.$o['lang'];
-            $output .= " .\n";
-          } else if ($o['type'] == 'bnode') { //print blank object
-            $output .= $o['value']." .\n";
-          }
-        }
-      }
+    $output = TWFormUtil::toSPARUL($this->data);
+    foreach($this->components as $component) {
+      $output .= $component->toSPARUL();
     }
     return $output;
   }
@@ -759,6 +692,7 @@ abstract class TWForm {
         $this->getLogger()->logStatus("No component of type $type");
         return false;
       }
+      array_push($this->components, $component);
       $result = $component->processPOST($this->data, $field, $uri, null);
       if(!$result) {
         $this->getLogger()->logStatus("Failed to process post for $field of type $type");
@@ -780,17 +714,13 @@ abstract class TWForm {
         $this->getLogger()->logStatus("Turtle: $ttl");
       }
       if ($ttl) {
-        $path = TWForm::getBackupPath();
+        $path = TWFormUtil::createPath(TWForm::getBackupPath(), null);
         if($path!="") {
-          $uri = ($_POST["uri_type"]=="file" ? TWFormUtil::valueOfFileField("uri") : $_POST["uri"]);
-          $uri = TWForm::segmentURI($_POST["class"]);
-          $uri = $uri['id'];
-          $curTime = gettimeofday();
-          $uri .= "_".$curTime["sec"]."_".$curTime["usec"];
-          if(strrpos($path,"/")==strlen($path)-1)
-            $path .= "/";
-          $fd = fopen($path.$uri.".rdf","w");
+          $fd = fopen($path.".rdf","w");
           fwrite($fd, $this->toRDF());
+          fclose($fd);
+          $fd = fopen($path.".ttl","w");
+          fwrite($fd, $ttl);
           fclose($fd);
           $this->getLogger()->logStatus("Saved backup file.");
         }

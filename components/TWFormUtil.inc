@@ -159,6 +159,118 @@ class TWFormUtil {
     return $obj;
   }
 
+  /**
+   * Converts the form POST data into a SPARQL 1.1 Update request
+   * @return string SPARUL request for updating the triple store
+   */
+  public static function toSPARUL($data) {
+    $output = "";
+    foreach($data as $s => $pmap) {
+      foreach($pmap as $p => $oarr) {
+        foreach($oarr as $o) {
+          $sb = preg_match("/^_:/",$s); //check if subject is blank
+          if ($sb) $output .= "$s <$p> ";
+          else $output .= "<$s> <$p> ";
+          if ($o['type'] == 'uri') //print URI object
+            $output .= '<'.$o['value']."> .\n";
+          else if ($o['type'] == 'literal') { //print literal object
+            $val = $o['value'];
+            $val = preg_replace('/\r/','',$val);
+            $val = preg_replace('/\n/','',$val);
+            $output .= '"'.preg_replace("/\"/","\\\"",$val).'"';
+            if (array_key_exists('datatype',$o)) $output .= '^^<'.$o['datatype'].'>';
+            if (array_key_exists('lang',$o)) $output .= '@'.$o['lang'];
+            $output .= " .\n";
+          } else if ($o['type'] == 'bnode') { //print blank object
+            $output .= $o['value']." .\n";
+          }
+        }
+      }
+    }
+    return $output;
+  }
+
+  public static function toRDF($data) {
+    $nsLookup = array();
+    foreach(TWForm::$namespaces as $ns => $uri) {
+      $nsLookup[$uri] = $ns;
+    }
+    $counter = 0;
+    $result = "";
+    foreach($data as $subj => $props) {
+      $sSplit = TWForm::segmentURI($subj);
+      if($sSplit["ns"]!="_:"&&!isset($nsLookup[$sSplit["ns"]])) {
+        $ns = "j.$counter";
+        $counter++;
+        TWForm::$namespaces[$ns] = $sSplit["ns"];
+        $nsLookup[$sSplit["ns"]] = $ns;
+      }
+      $result .= "<rdf:Description ";
+      if($sSplit["ns"]=="_:") {
+        $result .= "rdf:nodeID=\"".$sSplit["id"]."\">\r\n";
+      } else {
+        $result .= "rdf:about=\"".$subj."\">\r\n";
+      }
+      foreach($props as $prop => $objs) {
+        $pSplit = TWForm::segmentURI($prop);
+        if(!isset($nsLookup[$pSplit["ns"]])) {
+          $ns = "j.$counter";
+          $counter++;
+          TWForm::$namespaces[$ns] = $pSplit["ns"];
+          $nsLookup[$pSplit["ns"]] = $ns;
+        }
+        foreach($objs as $obj) {
+          if($obj["type"]=="uri") {
+            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].
+              " rdf:resource=\"".$obj["value"]."\"/>\r\n";
+          } else if($obj["type"]=="literal") {
+            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"];
+            if(isset($obj["datatype"]) && $obj["datatype"] ==
+               "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral") {
+              $result .= " rdf:parseType=\"Literal\"";
+            } else if(isset($obj["datatype"])) {
+              $result .= " rdf:datatype=\"".$obj["datatype"]."\"";
+            } else if(isset($obj["lang"])) {
+              $result .= " xml:lang=\"".$obj["lang"]."\"";
+            }
+            $result .= ">";
+            $result .= $obj["value"];
+            $result .= "</".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].">\r\n";
+          } else if($obj["type"]=="bnode") {
+            $result .= "<".$nsLookup[$pSplit["ns"]].":".$pSplit["id"].
+              " rdf:nodeID=\"".substr($obj["value"],2)."\"/>\r\n";
+          }
+        }
+      }
+      $result .= "</rdf:Description>\r\n";
+    }
+    $header = "<?xml version=\"1.0\"?><rdf:RDF";
+    foreach($nsLookup as $uri => $ns) {
+      if($uri!="")
+        $header .= " xmlns:$ns=\"$uri\"";
+    }
+    $header .= ">\r\n";
+    $result = $header . $result;
+    $result .= "</rdf:RDF>";
+    return $result;
+  }
+
+  public static function createPath($basePath, $name) {
+    $newPath = "";
+    if($basePath!="") {
+      if(!$name) {
+        $name = ($_POST["uri_type"]=="file" ? TWFormUtil::valueOfFileField("uri") : $_POST["uri"]);
+        $name = TWForm::segmentURI($_POST["class"]);
+        $name = $uri['id'];
+      }
+      $curTime = gettimeofday();
+      $uri = $name."_".$curTime["sec"]."_".$curTime["usec"];
+      if(strrpos($path,"/")==strlen($path)-1)
+        $path .= "/";
+      $newPath = $path.$uri;
+    }
+    return $newPath;
+  }
 };
 
 ?>

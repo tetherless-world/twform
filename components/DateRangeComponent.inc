@@ -12,10 +12,6 @@ class DateRangeComponent extends SimpleComponent {
     return $this->value;
   }
   
-  public function toSPARUL($node) {
-    
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();

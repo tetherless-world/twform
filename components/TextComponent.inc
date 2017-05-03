@@ -12,21 +12,6 @@ class TextComponent extends SimpleComponent {
     return $this->value;
   }
 
-  public function toSPARUL($node) {
-    if($this->rel) {
-      // TODO(ewpatton): escape $node """ becomes ""\"
-      return "$node <$this->rel> \"\"\"$node\"\"\" . ";
-    } else if($this->rev) {
-      user_error("Rev should not be specified for a text component",
-                 E_USER_WARNING);
-      return "";
-    } else {
-      user_error("Neither rel nor rev specified for text component $this->id",
-                 E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();

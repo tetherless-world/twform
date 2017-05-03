@@ -18,6 +18,7 @@ abstract class Component {
   private $sparqlVar=null;
   protected $logger = null;
   protected $form = null;
+  protected $data = NULL;
 
   public function getVar($i = 0) {
     if($this->sparqlVar == null) $this->sparqlVar = array();
@@ -36,7 +37,6 @@ abstract class Component {
   abstract public function postpopulate($inst, $entries);
   abstract public function getValue();
   abstract public function processPOST(&$data, $field, $uri, $obj=NULL);
-  abstract public function toSPARUL($node);
 
   public function getForm() { return $this->form; }
   public function setForm($form) { $this->form = $form; }
@@ -100,7 +100,7 @@ abstract class Component {
     $error = NULL;
     $rdf = $engine->executeQueryDOM( $engine->getEndpoint(), $query, $error );
     if($error) {
-      drupal_set_message($error);
+      $this->logger->logError($error);
       return array();
     }
     $results = $rdf->documentElement->getElementsByTagName("result");
@@ -209,7 +209,7 @@ abstract class Component {
     $error = NULL;
     $rdf = $engine->executeQueryDOM( $engine->getEndpoint(), $query, $error );
     if($error) {
-      drupal_set_message($error);
+      $this->logger->logError($error);
       return "";
     }
     $results = $rdf->getElementsByTagName("result");
@@ -253,12 +253,12 @@ abstract class Component {
     if(0===strpos($uri,"http://")) return $uri;
     $parts = explode(":",$uri);
     if(count($parts)!=2) {
-      drupal_set_message("Invalid CURIE $uri.","error");
+      $this->logger->logError("Invalid CURI $uri.");
       return $uri;
     }
     //return TWForm::expandCURIE($uri);
     if(!isset(TWForm::$namespaces[$parts[0]])) {
-      drupal_set_message("Undeclared namespace $parts[0]","error");
+      $this->logger->logError("Undeclared namespace $parts[0].");
       return $uri;
     }
     return TWForm::$namespaces[$parts[0]].$parts[1];
@@ -317,6 +317,16 @@ abstract class Component {
       return false;
     }
     return true;
+  }
+
+  public function toSPARUL() {
+    if($this->data) return TWFormUtil::toSPARUL($this->data);
+    return "";
+  }
+
+  public function toRDF() {
+    if($this->data) return TWForm::toRDF($this->data);
+    return "";
   }
 
   public function dump($spaces)

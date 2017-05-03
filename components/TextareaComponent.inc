@@ -13,22 +13,6 @@ class TextareaComponent extends SimpleComponent {
     return $this->value;
   }
 
-  public function toSPARUL($node) {
-    if($this->rel) {
-      // TODO(ewpatton) escape $node """ becomes ""\"
-      $dodo = "$node <$this->rel> \"\"\"<div xmlns=\"http://www.w3.org/1999/xhtml\">$this->value</div>\"\"\" .";
-      $this->getLogger()->logStatus( "thigy = $dodo" ) ;
-      return "$node <$this->rel> \"\"\"<div xmlns=\"http://www.w3.org/1999/xhtml\">$this->value</div>\"\"\" .";
-    } else if($this->rev) {
-      user_error("Rev shouldn't be specified on a textarea component.",
-                 E_USER_WARNING);
-      return "";
-    } else {
-      user_error("Neither rel nor rev specified on Textarea component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();

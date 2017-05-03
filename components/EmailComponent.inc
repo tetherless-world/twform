@@ -14,10 +14,6 @@ class EmailComponent extends SimpleComponent {
     
   }
   
-  public function toSPARUL($node) {
-    
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();

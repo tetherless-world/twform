@@ -17,10 +17,6 @@ class CompoundComponent extends Component {
     
   }
   
-  public function toSPARUL($node) {
-    
-  }
-
   private function implodeSparqlBgp($parts) {
     $res = "";
     foreach($parts as $triple) {
@@ -81,7 +77,6 @@ class CompoundComponent extends Component {
       }
     }
     $str = $this->implodeSparql($res);
-    //drupal_set_message(htmlspecialchars($str));
     $engine = TWSparql::getEngine();
     $endpoint = $engine->getEndpoint();
     $err = NULL;
@@ -124,7 +119,7 @@ class CompoundComponent extends Component {
     $success = parent::processParams($params);
 
     if(!isset($params["typeof"])) {
-      drupal_set_message("No type specified for compound object.","error");
+      $this->logger->logError("No type specified for compound object.");
       return false;
     }
     $this->typeof = $this->resolve($params["typeof"]);

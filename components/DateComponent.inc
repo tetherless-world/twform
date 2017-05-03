@@ -12,18 +12,6 @@ class DateComponent extends SimpleComponent {
     return $this->value;
   }
 
-  public function toSPARUL($node) {
-    if(!$this->value) return "";
-    if($this->rel) {
-      return "$node <$this->rel> [ a time:Instant ; time:inXSDDateTime \"$this->value\"^^xsd:dateTime ] .";
-    } else if($this->rev) {
-      return "[ a time:Instant ; time:inXSDDateTime \"$this->value\"^^xsd:dateTime ] <$this->rel> $node .";
-    } else {
-      user_error("Neither rel nor rev specified on Date component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
