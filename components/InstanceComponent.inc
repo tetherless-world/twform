@@ -124,7 +124,7 @@ class InstanceComponent extends SimpleComponent {
         if(!$this->class) {
           $this->logger->logError("Instance form field $field is missing class field.");
         } else {
-          $this->newObj = NewInstance::getNewInstance($this->class);
+          $this->newObj = NewInstance::getNewInstance($this->class, $obj);
           if(!$this->newObj) {
             $this->logger->logError("Instance form field '$field' class '$this->class' does not have a corresponding new object.");
           } else {

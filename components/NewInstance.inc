@@ -8,6 +8,8 @@ include_once("NewPerson.inc");
 
 abstract class NewInstance {
   protected $uri = "";
+  protected $name = "";
+
   protected function generateURI($prefix) {
     $uri = $prefix;
     $curTime = gettimeofday();
@@ -17,16 +19,25 @@ abstract class NewInstance {
     return $uri;
   }
 
+  protected function setName($name) {
+    $this->name = $name;
+  }
+
+  protected function getName() {
+    return $this->name;
+  }
+
   abstract public function createNew();
   abstract public function toSPARUL();
 
-  public static function getNewInstance($class) {
-    TWForm::$namespaces["tw"]."Concept";
-    if($class == TWForm::$namespaces["tw"]."Concept") return new NewConcept();
-    else if($class == TWForm::$namespaces["tw"]."Event") return new NewEvent();
-    else if($class == TWForm::$namespaces["tw"]."Journal") return new NewJournal();
-    else if($class == TWForm::$namespaces["foaf"]."Organization") return new NewOrganization();
-    else if($class == TWForm::$namespaces["foaf"]."Person") return new NewPerson();
+  public static function getNewInstance($class, $name) {
+    $newObj = null;
+    if($class == TWForm::$namespaces["tw"]."Concept") $newObj = new NewConcept();
+    else if($class == TWForm::$namespaces["tw"]."Event") $newObj = new NewEvent();
+    else if($class == TWForm::$namespaces["tw"]."Journal") $newObj = new NewJournal();
+    else if($class == TWForm::$namespaces["foaf"]."Organization") $newObj = new NewOrganization();
+    else if($class == TWForm::$namespaces["foaf"]."Person") $newObj = new NewPerson();
+    if($newObj) $newObj->setName($name);
   }
 };
 
