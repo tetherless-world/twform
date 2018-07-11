@@ -13,27 +13,6 @@ class SubclassComponent extends SimpleComponent {
     return $this->values;
   }
   
-  public function toSPARUL($node) {
-    if(!$this->rel && !$this->rev) {
-      user_error("Neither rev nor rel specified for subclass component $this->id", E_USER_WARNING);
-      return "";
-    }
-    if(!$this->rel) {
-      user_error("Rev should not be specified for subclass component $this->id", E_USER_WARNING);
-    }
-    $str = "$node rdf:type ";
-    $first = TRUE;
-    foreach($this->values as $i => $uri) {
-      if($first) {
-        $str .= "<$uri>";
-        $first = FALSE;
-      } else {
-        $str .= ", <$uri>";
-      }
-    }
-    return $str." . ";
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
@@ -94,6 +73,16 @@ class SubclassComponent extends SimpleComponent {
       $space.'TWForms.subclassBasedSelect(self,"'.$this->instClass.'");';
     */
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $this->rel = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

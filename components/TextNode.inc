@@ -3,10 +3,6 @@
 class TextNode {
   protected $text = NULL;
   
-  public function validate() {
-    return array();
-  }
-  
   public function getType() {
     return "textNode";
   }

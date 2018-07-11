@@ -9,33 +9,10 @@ class AliasComponent extends SimpleComponent {
     $this->type = "alias";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value!="") {
-        return array();
-      } else {
-        return array("Field '".$this->id."' is required.");
-      }
-    }
-    return array();
-  }
-  
   public function getValue() {
     return $this->value;
   }
   
-  public function toSPARUL($node) {
-    if(!$this->value) return "";
-    if($this->rel) {
-      return "$node <$this->rel> <$this->value> . ";
-    } else if($this->rev) {
-      return "<$this->value> <$this->rev> $node . ";
-    } else {
-      user_error("Neither rel nor rev specified on URL component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
@@ -126,6 +103,18 @@ class AliasComponent extends SimpleComponent {
 
   public function init($space) {
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $page = TWFormUtil::valueOfAliasField($field, $this->form->getBasePath());
+    if(!$obj) {
+      $obj = $page;
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    $dtype = null;
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

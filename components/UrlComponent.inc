@@ -10,40 +10,10 @@ class UrlComponent extends SimpleComponent {
     $this->type = "url";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value == "") {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    }
-    if($this->value=="") return array();
-    if(0==preg_match($regex, $this->value)) {
-      return array("The value '".$this->id."' does not have a valid URI scheme.");
-    } else {
-      $parts = explode(":", $this->value);
-      if($parts[0]=="http" || $parts[0]=="https") {
-        // TODO: more validation on HTTP URLs
-        return array();
-      }
-    }
-    return array();
-  }
-  
   public function getValue() {
     return $this->value;
   }
   
-  public function toSPARUL($node) {
-    if($this->rel) {
-      return "$node <$this->rel> <$this->value> . ";
-    } else if($this->rev) {
-      return "<$this->value> <$this->rev> $node . ";
-    } else {
-      user_error("Neither rel nor rev specified on URL component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
@@ -92,6 +62,17 @@ class UrlComponent extends SimpleComponent {
 
   public function init($space) {
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $dtype = null;
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

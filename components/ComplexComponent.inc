@@ -17,10 +17,6 @@ class CompoundComponent extends Component {
     
   }
   
-  public function toSPARUL($node) {
-    
-  }
-
   private function implodeSparqlBgp($parts) {
     $res = "";
     foreach($parts as $triple) {
@@ -81,7 +77,6 @@ class CompoundComponent extends Component {
       }
     }
     $str = $this->implodeSparql($res);
-    //drupal_set_message(htmlspecialchars($str));
     $engine = TWSparql::getEngine();
     $endpoint = $engine->getEndpoint();
     $err = NULL;
@@ -124,7 +119,7 @@ class CompoundComponent extends Component {
     $success = parent::processParams($params);
 
     if(!isset($params["typeof"])) {
-      drupal_set_message("No type specified for compound object.","error");
+      $this->logger->logError("No type specified for compound object.");
       return false;
     }
     $this->typeof = $this->resolve($params["typeof"]);
@@ -145,7 +140,8 @@ class CompoundComponent extends Component {
       if(0<preg_match("/^<twformfield(?P<attrs>([^\/>]*(\/[^>])?)*)(\/>|>((?P<body>[^<]*(<[^\/])?)*)<\/twformfield>)/",$content,$matches,PREG_OFFSET_CAPTURE)) {
         
         $params = TWForm::extractAttrs($matches["attrs"][0]);
-        $comp = $this->getForm()->createComponent($params, $twforms_namespaces);
+        $comp = TWFormUtil::createComponent($params["type"], $this->form, $this->logger);
+        $comp->processParams($params);
         
         //checking for isArray, and passing to subfields
         if ($this->getIsArray()) $comp->setIsArray( true );
@@ -235,9 +231,136 @@ class CompoundComponent extends Component {
     return $content;
   }
 
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $subfields = array();
+    $class = $_POST[$field."_class"];
+    foreach($_POST as $subfield => $value) {
+      if(0===strpos($subfield,$field."_")) {
+        $pos = strpos($subfield,"_type",strlen($field)+1);
+        if($pos!==FALSE) {
+          $substr = substr($subfield,0,$pos);
+          $subfields[$substr] = true;
+          $this->logger->logStatus("added subfield " . $substr);
+        }
+      }
+    }
+
+    $values = array();
+    $hasvalue = false ;
+    foreach($subfields as $subfield => $exists) {
+      $this->logger->logStatus("handling subfield " . $subfield);
+      $info = array();
+      $info["type"] = $_POST[$subfield."_type"];
+      $myvalue = $_POST[$subfield];
+
+      // let's see if this compound has any values. If it doesn't, then we don't want to add
+      // any data.
+      if( is_array( $myvalue ) ) {
+        // we want to ignore the subclass, since it will always have a value of at least
+        // the top most class in the class tree.
+        if( $info["type"] != "subclass" ) {
+          // implode will create a single string with all of the values. If that string
+          // is empty, then there are no values
+          $fullvalue = implode( "", $myvalue ) ;
+          if( strlen( $fullvalue ) > 0 ) {
+            // hey ... we have values
+            $hasvalue = true ;
+          }
+        }
+      }
+      else {
+        // simple test on a string. If the string has length, then there is a value
+        // but, you ask, what if they just hit space a bunch of times.
+        $myvalue = trim( $myvalue ) ;
+        if( strlen( $myvalue ) > 0 ) {
+            $hasvalue = true ;
+        }
+      }
+      $info["value"] = $myvalue;
+      $values[$subfield] = $info;
+    }
+
+    // we don't want to error out if there aren't any values, but we also don't want to add values
+    if( $hasvalue == false ) {
+      $this->logger->logStatus("twforms_process_compound_results field '$field' has no values","status");
+      return true;
+    }
+
+    if($_POST[$field."_many"]=="true") {
+      $order = $_POST[$field."_order"];
+      if($order == "false") $order = null;
+      $len = 0;
+      foreach($values as $subfield => $bits) {
+        $len = count($bits["value"]);
+        break;
+      }
+      for($i=0;$i<$len;$i++) {
+        $self = TWFormUtil::getBnode();
+        TWFormUtil::setProperty($data, $self,
+          "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+          $class, "uri");
+        foreach($values as $subfield => $bits) {
+          $value = $bits["value"][$i];
+          $subtype = $_POST[$subfield."_type"];
+          $this->logger->logStatus("Handling subfield " . $subfield . " of type " . $subtype);
+          $component = TWFormUtil::createComponent($subtype, $this->form, $this->logger);
+          if(!$component) {
+            $this->logger->logStatus("compound processPOST returned empty sub component for subfield '$subfield' of compound element '$field'.".  "error");
+            return false;
+          }
+          if(!$component->processPOST($data, $subfield, $self, $value)) {
+            $this->logger->logStatus("processField returned false for subfield '$subfield' of compound element '$field'.","error");
+            return false;
+          }
+        }
+        if($order)
+          TWFormUtil::setProperty($data, $self, $order, $i+1, "literal",
+                  "http://www.w3.org/2001/XMLSchema#int");
+        $rel = TWFormUtil::valueOfFieldRel($field);
+        $rev = TWFormUtil::valueOfFieldRev($field);
+        if($rel) {
+          TWFormUtil::setProperty($data, $uri, $rel, $self, "bnode");
+        }
+        else if($rev) {
+          TWFormUtil::setProperty($data, $self, $rev, $uri, "uri");
+        }
+        else {
+          $this->logger->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
+          return false;
+        }
+      }
+    }
+    else {
+      $self = TWFormUtil::getBnode();
+      foreach($values as $subfield => $bits) {
+        $subtype = $_POST[$subfield."_type"];
+        $component = TWFormUtil::createComponent($subtype, $this->form, $this->logger);
+        if(!$component) {
+          $this->logger->logStatus("compound processPOST returned empty sub component for subfield '$subfield' of compound element '$field'.".  "error");
+          return false;
+        }
+        if(!$component->processPOST($data, $subfield, $self, null))
+          return false;
+      }
+      $rel = TWFormUtil::valueOfFieldRel($field);
+      $rev = TWFormUtil::valueOfFieldRev($field);
+      if($rel) {
+        TWFormUtil::setProperty($data, $uri, $rel, $self, "bnode");
+      }
+      else if($rev) {
+        TWFormUtil::setProperty($data, $self, $rev, $uri, (0===strpos($uri,"_:") ? "bnode" : "uri"));
+      }
+      else {
+        $this->logger->logStatus("Compound form '$field' not related to parent object by rel nor rev attribute.","error");
+        return false;
+      }
+    }
+    return true;
+  }
+
   public function dump($spaces)
   {
-      $this->getLogger()->logStatus( "$spaces ComplexComponent:" ) ;
+      $this->logger->logStatus( "$spaces ComplexComponent:" ) ;
       $newspaces = $spaces . "&nbsp;&nbsp;&nbsp;&nbsp;" ;
       parent::dump( $newspaces ) ;
   }

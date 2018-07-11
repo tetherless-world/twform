@@ -8,30 +8,8 @@ class TextComponent extends SimpleComponent {
     $this->type = "text";
   }
 
-  public function validate() {
-    if($this->required && $this->value=="") {
-      return array("Field '".$this->id."' cannot be left blank.");
-    }
-    return array();
-  }
-
   public function getValue() {
     return $this->value;
-  }
-
-  public function toSPARUL($node) {
-    if($this->rel) {
-      // TODO(ewpatton): escape $node """ becomes ""\"
-      return "$node <$this->rel> \"\"\"$node\"\"\" . ";
-    } else if($this->rev) {
-      user_error("Rev should not be specified for a text component",
-                 E_USER_WARNING);
-      return "";
-    } else {
-      user_error("Neither rel nor rev specified for text component $this->id",
-                 E_USER_WARNING);
-      return "";
-    }
   }
 
   public function prepopulate($inst, $top) {
@@ -83,6 +61,17 @@ class TextComponent extends SimpleComponent {
 
   public function init($space) {
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "literal";
+    $dtype = "http://www.w3.org/2001/XMLSchema#string";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

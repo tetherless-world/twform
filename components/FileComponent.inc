@@ -11,18 +11,6 @@ class FileComponent extends SimpleComponent {
     return $this->value;
   }
   
-  public function toSPARUL($node) {
-    if(!$this->value) return "";
-    if($this->rel) {
-      return "$node <$this->rel> <$this->value> . ";
-    } else if($this->rev) {
-      return "<$this->value> <$this->rev> $node . ";
-    } else {
-      user_error("Neither rel nor rev specified on URL component $this->id", E_USER_WARNING);
-      return "";
-    }
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
@@ -76,6 +64,17 @@ class FileComponent extends SimpleComponent {
       $space.'var upload = $(\'input[id="'.$this->id.'_internal"]\');'.EOL.
       $space.'var url = $(\'input[name="'.$this->id.'_external"]\');'.EOL.
       $space.'TWForms.fileUploadRadios(radios,upload,url);';
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = TWFormUtil::valueOfFileField($field);
+    }
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

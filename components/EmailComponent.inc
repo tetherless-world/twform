@@ -10,27 +10,10 @@ class EmailComponent extends SimpleComponent {
     $this->type = "email";
   }
   
-  public function validate() {
-    if($this->required) {
-      if($this->value=="") {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    }
-    if($this->value==""||0==preg_match(EmailComponent::$regex, $this->value)) {
-      return array("The value '".$this->value."' is not a valid RFC 2822 email ".
-        "address in field '".$this->id."'");
-    }
-    return array();
-  }
-  
   public function getValue() {
     
   }
   
-  public function toSPARUL($node) {
-    
-  }
-
   public function prepopulate($inst, $top) {
     if($top) {
       $engine = TWSparql::getEngine();
@@ -79,6 +62,18 @@ class EmailComponent extends SimpleComponent {
 
   public function init($space) {
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+    }
+    $obj = "mailto:".$obj;
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

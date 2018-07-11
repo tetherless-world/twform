@@ -8,44 +8,8 @@ class DateComponent extends SimpleComponent {
     $this->type = "date";
   }
 
-  public function validate() {
-    if($this->required) {
-      if($this->value=="") {
-        return array("Field '".$this->id."' cannot be left blank.");
-      }
-    } else {
-      if(1!=preg_match("-?[0-9]{4}-[0-9]{2}-[0-9]{2}",$this->value)) {
-        return array("The value '".$this->value."' is not valid for field '".
-          $this->id."'.");
-      } else {
-        $date = date_parse($this->value);
-        if(!$date) {
-          return array("The value '".$this->value."' is not valid for field '".
-            $this->id."'.");
-        }
-        if($date["warning_count"]+$date["error_count"]>0) {
-          return array("The value '".$this->value."' is not valid for field '".
-            $this->id."'.");
-        }
-      }
-    }
-    return array();
-  }
-
   public function getValue() {
     return $this->value;
-  }
-
-  public function toSPARUL($node) {
-    if(!$this->value) return "";
-    if($this->rel) {
-      return "$node <$this->rel> [ a time:Instant ; time:inXSDDateTime \"$this->value\"^^xsd:dateTime ] .";
-    } else if($this->rev) {
-      return "[ a time:Instant ; time:inXSDDateTime \"$this->value\"^^xsd:dateTime ] <$this->rel> $node .";
-    } else {
-      user_error("Neither rel nor rev specified on Date component $this->id", E_USER_WARNING);
-      return "";
-    }
   }
 
   public function prepopulate($inst, $top) {
@@ -103,6 +67,30 @@ class DateComponent extends SimpleComponent {
     return
       $space.'var self = $(\'input[name="'.$this->id.'"]\',this);'.EOL.
       $space.'self.datepicker({dateFormat:"yy-mm-dd"});';
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    if($obj) {
+      $val = $obj;
+    } else {
+      $val = $_POST[$field];
+    }
+    if($val=="") return true;
+    if(FALSE===strpos($field,"T"))
+      $val = $val."T04:00:00".TWForm::getTimezone($val);
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $bnode = TWFormUtil::getBnode();
+    TWFormUtil::setProperty($data, $bnode,
+      "http://www.w3.org/2006/time#inXSDDateTime",
+      $val, "literal",
+      "http://www.w3.org/2001/XMLSchema#dateTime");
+    TWFormUtil::setProperty($data, $bnode,
+      "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      "http://www.w3.org/2006/time#Instant", "uri");
+    $obj = $bnode;
+    $type = "bnode";
+    $dtype = null;
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)

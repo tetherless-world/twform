@@ -6,6 +6,7 @@ class InstanceComponent extends SimpleComponent {
   protected $size=null;
   protected $placeholder="";
   protected $values = NULL;
+  protected $newObj = NULL;
 
   public function __construct() {
     $this->type = "instance";
@@ -15,30 +16,10 @@ class InstanceComponent extends SimpleComponent {
     return $this->values;
   }
   
-  public function toSPARUL($node) {
-    if(!$this->rel && !$this->rev) {
-      user_error("Neither rel nor rev specified on instance component $this->id", E_USER_WARNING);
-      return "";
-    }
-    if($this->rel) {
-      $str = "$node <$this->rel> ";
-      $first = TRUE;
-      foreach($this->values as $i => $uri) {
-        if($first) {
-          $str .= "<$uri>";
-          $first = FALSE;
-        } else {
-          $str .= ", <$uri>";
-        }
-      }
-      return $str." . ";
-    } else {
-      $str = "";
-      foreach($this->values as $i => $uri) {
-        $str .= "<$uri> <$this->rev> $i . ";
-      }
-      return $str;
-    }
+  public function toSPARUL() {
+    $output = parent::toSPARUL();
+    if($this->newObj) $output.=$this->newObj->toSPARUL();
+    return $output;
   }
 
   public function prepopulate($inst, $top) {
@@ -84,7 +65,7 @@ class InstanceComponent extends SimpleComponent {
   public function processParams(&$params) {
     $success = parent::processParams($params);
     if(!isset($params["class"])) {
-      drupal_set_message("Form input '$this->id' does not have required parameter 'class'.","error");
+      $this->logger->logError("Form input '$this->id' does not have required parameter 'class'.");
       return false;
     }
     $this->class = $this->resolve($params["class"]);
@@ -118,6 +99,7 @@ class InstanceComponent extends SimpleComponent {
       $res .= ">$label</option>";
     }
     $res .= "</select>";
+    $res .= '<input type="hidden" name="'.$this->id.'_class" value="'.$this->class.'"/>';
     return $res;
   }
 
@@ -131,6 +113,31 @@ class InstanceComponent extends SimpleComponent {
       $space.'TWForms.classBasedSelect(self,"'.$this->class.'");';
     */
     return "";
+  }
+
+  public function processPOST(&$data, $field, $uri, $obj=NULL) {
+    $dtype = null;
+    if(!$obj) {
+      $obj = $_POST[$field];
+      if(strpos($obj, "http") != 0) {
+        $this->class = $_POST[$field."_class"];
+        if(!$this->class) {
+          $this->logger->logError("Instance form field $field is missing class field.");
+        } else {
+          $this->newObj = NewInstance::getNewInstance($this->class, $obj);
+          if(!$this->newObj) {
+            $this->logger->logError("Instance form field '$field' class '$this->class' does not have a corresponding new object.");
+          } else {
+            $obj = $this->newObj->createNew();
+          }
+        }
+      }
+    }
+    if($obj == "") return true;
+    $this->rel = TWFormUtil::valueOfFieldRel($field);
+    $this->rev = TWFormUtil::valueOfFieldRev($field);
+    $type = "uri";
+    return parent::postProcessPOST($data, $uri, $obj, $type, $dtype);
   }
 
   public function dump($spaces)
